@@ -4,10 +4,17 @@ import de.komoot.photon.CommandLineArgs;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.SystemUtils;
+import org.apache.http.HttpHost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.nio.entity.NStringEntity;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.node.InternalSettingsPreparer;
@@ -15,7 +22,6 @@ import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeValidationException;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.transport.Netty4Plugin;
-import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -28,10 +34,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Helper class to start/stop elasticsearch node and get elasticsearch clients
@@ -42,7 +45,8 @@ import java.util.List;
 public class Server {
     private Node esNode;
 
-    private Client esClient;
+    private RestClient lowLevelRestClient;
+    private RestHighLevelClient esClient;
 
     private String clusterName;
 
@@ -85,25 +89,6 @@ public class Server {
         sBuilder.put("network.host", "127.0.0.1"); // http://stackoverflow.com/a/15509589/1245622
         sBuilder.put("cluster.name", clusterName);
 
-        if (transportAddresses != null && !transportAddresses.isEmpty()) {
-            TransportClient trClient = new PreBuiltTransportClient(sBuilder.build());
-            List<String> addresses = Arrays.asList(transportAddresses.split(","));
-            for (String tAddr : addresses) {
-                int index = tAddr.indexOf(":");
-                if (index >= 0) {
-                    int port = Integer.parseInt(tAddr.substring(index + 1));
-                    String addrStr = tAddr.substring(0, index);
-                    trClient.addTransportAddress(new InetSocketTransportAddress(new InetSocketAddress(addrStr, port)));
-                } else {
-                    trClient.addTransportAddress(new InetSocketTransportAddress(new InetSocketAddress(tAddr, 9300)));
-                }
-            }
-
-            esClient = trClient;
-
-            log.info("started elastic search client connected to " + addresses);
-
-        } else {
 
             try {
                 sBuilder.put("transport.type", "netty4").put("http.type", "netty4").put("http.enabled", "true");
@@ -115,13 +100,14 @@ public class Server {
 
                 log.info("started elastic search node");
 
-                esClient = esNode.client();
-
             } catch (NodeValidationException e) {
                 throw new RuntimeException("Error while starting elasticsearch server", e);
             }
 
-        }
+
+        lowLevelRestClient = RestClient.builder(new HttpHost("host", 9200, "http")).build();
+        esClient = new RestHighLevelClient(lowLevelRestClient);
+
         return this;
     }
 
@@ -133,7 +119,7 @@ public class Server {
             if (esNode != null)
                 esNode.close();
 
-            esClient.close();
+            lowLevelRestClient.close();
         } catch (IOException e) {
             throw new RuntimeException("Error during elasticsearch server shutdown", e);
         }
@@ -142,7 +128,7 @@ public class Server {
     /**
      * returns an elasticsearch client
      */
-    public Client getClient() {
+    public RestHighLevelClient getClient() {
         return esClient;
     }
 
@@ -180,12 +166,17 @@ public class Server {
     public void recreateIndex() throws IOException {
         deleteIndex();
 
-        final Client client = this.getClient();
-        final InputStream mappings = Thread.currentThread().getContextClassLoader()
-                .getResourceAsStream("mappings.json");
         final InputStream indexSettings = Thread.currentThread().getContextClassLoader()
                 .getResourceAsStream("index_settings.json");
         final Charset utf8Charset = Charset.forName("utf-8");
+
+        JSONObject settings = new JSONObject(IOUtils.toString(indexSettings, utf8Charset));
+        if (shards != null) {
+            settings.put("index", new JSONObject("{ \"number_of_shards\":" + shards + " }"));
+        }
+
+        final InputStream mappings = Thread.currentThread().getContextClassLoader()
+                .getResourceAsStream("mappings.json");
 
         String mappingsString = IOUtils.toString(mappings, utf8Charset);
         JSONObject mappingsJSON = new JSONObject(mappingsString);
@@ -193,22 +184,34 @@ public class Server {
         // add all langs to the mapping
         mappingsJSON = addLangsToMapping(mappingsJSON);
 
-        JSONObject settings = new JSONObject(IOUtils.toString(indexSettings, utf8Charset));
-        if (shards != null) {
-            settings.put("index", new JSONObject("{ \"number_of_shards\":" + shards + " }"));
-        }
-        client.admin().indices().prepareCreate(PhotonIndex.NAME).setSettings(settings.toString(), XContentType.JSON).execute().actionGet();
+        String payload = XContentFactory.jsonBuilder()
+        .startObject()
+            .startObject("settings")
+                .value(settings)
+            .endObject()
+            .startObject("mappings")
+                .value(mappingsJSON)
+            .endObject()
+        .endObject().string();
 
-        client.admin().indices().preparePutMapping(PhotonIndex.NAME).setType(PhotonIndex.TYPE).setSource(mappingsJSON.toString(), XContentType.JSON).execute().actionGet();
-        log.info("mapping created: " + mappingsJSON.toString());
+        lowLevelRestClient.performRequest(" PUT", PhotonIndex.NAME, Collections.emptyMap(), new NStringEntity(payload, ContentType.APPLICATION_JSON));
+
+        log.info("Mapping created for {}.", PhotonIndex.NAME);
     }
 
     public void deleteIndex() {
+        DeleteRequest request = new DeleteRequest(PhotonIndex.NAME, PhotonIndex.TYPE, "id");
+
         try {
-            this.getClient().admin().indices().prepareDelete(PhotonIndex.NAME).execute().actionGet();
-        } catch (IndexNotFoundException e) {
+            esClient.delete(request);
+        } catch (IOException e) {
             // ignore
         }
+    }
+
+    public void waitForReady() throws IOException {
+        Map<String, String> parameters = Collections.singletonMap("wait_for_status", "yellow");
+        lowLevelRestClient.performRequest("GET", "/_cluster/health", parameters);
     }
 
     private JSONObject addLangsToMapping(JSONObject mappingsObject) {

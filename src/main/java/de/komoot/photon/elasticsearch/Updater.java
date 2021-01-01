@@ -3,9 +3,11 @@ package de.komoot.photon.elasticsearch;
 import de.komoot.photon.PhotonDoc;
 import de.komoot.photon.Utils;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.client.Client;
+import org.elasticsearch.action.delete.DeleteRequest;
+import org.elasticsearch.client.Requests;
+import org.elasticsearch.client.RestHighLevelClient;
 
 import java.io.IOException;
 
@@ -16,13 +18,13 @@ import java.io.IOException;
  */
 @Slf4j
 public class Updater implements de.komoot.photon.Updater {
-    private final Client esClient;
-    private BulkRequestBuilder bulkRequest;
+    private final RestHighLevelClient esClient;
+    private BulkRequest bulkRequest;
     private final String[] languages;
 
-    public Updater(Client esClient, String languages) {
+    public Updater(RestHighLevelClient esClient, String languages) {
         this.esClient = esClient;
-        this.bulkRequest = esClient.prepareBulk();
+        this.bulkRequest = Requests.bulkRequest();
         this.languages = languages.split(",");
     }
 
@@ -40,7 +42,7 @@ public class Updater implements de.komoot.photon.Updater {
     }
 
     public void delete(Long id) {
-        this.bulkRequest.add(this.esClient.prepareDelete(PhotonIndex.NAME, PhotonIndex.TYPE, String.valueOf(id)));
+        this.bulkRequest.add(new DeleteRequest(PhotonIndex.NAME, PhotonIndex.TYPE, String.valueOf(id)));
     }
 
     private void updateDocuments() {
@@ -48,10 +50,15 @@ public class Updater implements de.komoot.photon.Updater {
             log.warn("Update empty");
             return;
         }
-        BulkResponse bulkResponse = bulkRequest.execute().actionGet();
+        BulkResponse bulkResponse = null;
+        try {
+            bulkResponse = esClient.bulk(bulkRequest);
+        } catch (IOException e) {
+            // TODO
+        }
         if (bulkResponse.hasFailures()) {
             log.error("error while bulk update: " + bulkResponse.buildFailureMessage());
         }
-        this.bulkRequest = this.esClient.prepareBulk();
+        this.bulkRequest = Requests.bulkRequest();
     }
 }

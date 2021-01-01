@@ -3,9 +3,11 @@ package de.komoot.photon.elasticsearch;
 import de.komoot.photon.PhotonDoc;
 import de.komoot.photon.Utils;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.client.Client;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.client.Requests;
+import org.elasticsearch.client.RestHighLevelClient;
 
 import java.io.IOException;
 
@@ -18,21 +20,22 @@ import java.io.IOException;
 public class Importer implements de.komoot.photon.Importer {
     private int documentCount = 0;
 
-    private final Client esClient;
-    private BulkRequestBuilder bulkRequest;
+    private final RestHighLevelClient esClient;
+    private BulkRequest bulkRequest;
     private final String[] languages;
 
-    public Importer(Client esClient, String languages) {
+    public Importer(RestHighLevelClient esClient, String languages) {
         this.esClient = esClient;
-        this.bulkRequest = esClient.prepareBulk();
+        this.bulkRequest = Requests.bulkRequest();
         this.languages = languages.split(",");
     }
 
     @Override
     public void add(PhotonDoc doc) {
         try {
-            this.bulkRequest.add(this.esClient.prepareIndex(PhotonIndex.NAME, PhotonIndex.TYPE).
-                    setSource(Utils.convert(doc, languages)).setId(doc.getUid()));
+            IndexRequest idx = new IndexRequest(PhotonIndex.NAME).type(PhotonIndex.TYPE)
+                    .source(Utils.convert(doc, languages)).id(doc.getUid());
+            this.bulkRequest.add(idx);
         } catch (IOException e) {
             log.error("could not bulk add document " + doc.getUid(), e);
             return;
@@ -46,11 +49,17 @@ public class Importer implements de.komoot.photon.Importer {
     private void saveDocuments() {
         if (this.documentCount < 1) return;
 
-        BulkResponse bulkResponse = bulkRequest.execute().actionGet();
+        BulkResponse bulkResponse = null;
+        try {
+            bulkResponse = esClient.bulk(bulkRequest);
+        } catch (IOException e) {
+            // TODO: need to handle error.
+            log.error(" Could not push documents to database.");
+        }
         if (bulkResponse.hasFailures()) {
             log.error("error while bulk import:" + bulkResponse.buildFailureMessage());
         }
-        this.bulkRequest = this.esClient.prepareBulk();
+        this.bulkRequest = Requests.bulkRequest();
     }
 
     @Override

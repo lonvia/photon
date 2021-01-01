@@ -9,6 +9,7 @@ import de.komoot.photon.nominatim.NominatimUpdater;
 import de.komoot.photon.utils.CorsFilter;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.RestHighLevelClient;
 import spark.Request;
 import spark.Response;
 
@@ -50,10 +51,8 @@ public class App {
         boolean shutdownES = false;
         final Server esServer = new Server(args).start();
         try {
-            Client esClient = esServer.getClient();
-
             log.info("Make sure that the ES cluster is ready, this might take some time.");
-            esClient.admin().cluster().prepareHealth().setWaitForYellowStatus().get();
+            esServer.waitForReady();
             log.info("ES cluster is now ready.");
 
             if (args.isRecreateIndex()) {
@@ -64,19 +63,19 @@ public class App {
 
             if (args.isNominatimImport()) {
                 shutdownES = true;
-                startNominatimImport(args, esServer, esClient);
+                startNominatimImport(args, esServer);
                 return;
             }
 
             if (args.isNominatimUpdate()) {
                 shutdownES = true;
-                final NominatimUpdater nominatimUpdater = setupNominatimUpdater(args, esClient);
+                final NominatimUpdater nominatimUpdater = setupNominatimUpdater(args, esServer.getClient());
                 nominatimUpdater.update();
                 return;
             }
 
             // no special action specified -> normal mode: start search API
-            startApi(args, esClient);
+            startApi(args, esServer.getClient());
         } finally {
             if (shutdownES) esServer.shutdown();
         }
@@ -123,9 +122,8 @@ public class App {
      *
      * @param args
      * @param esServer
-     * @param esNodeClient
      */
-    private static void startNominatimImport(CommandLineArgs args, Server esServer, Client esNodeClient) {
+    private static void startNominatimImport(CommandLineArgs args, Server esServer) {
         try {
             esServer.recreateIndex(); // dump previous data
         } catch (IOException e) {
@@ -133,7 +131,7 @@ public class App {
         }
 
         log.info("starting import from nominatim to photon with languages: " + args.getLanguages());
-        de.komoot.photon.elasticsearch.Importer importer = new de.komoot.photon.elasticsearch.Importer(esNodeClient, args.getLanguages());
+        de.komoot.photon.elasticsearch.Importer importer = new de.komoot.photon.elasticsearch.Importer(esServer.getClient(), args.getLanguages());
         NominatimConnector nominatimConnector = new NominatimConnector(args.getHost(), args.getPort(), args.getDatabase(), args.getUser(), args.getPassword());
         nominatimConnector.setImporter(importer);
         nominatimConnector.readEntireDatabase(args.getCountryCodes().split(","));
@@ -147,7 +145,7 @@ public class App {
      * @param args
      * @param esNodeClient
      */
-    private static NominatimUpdater setupNominatimUpdater(CommandLineArgs args, Client esNodeClient) {
+    private static NominatimUpdater setupNominatimUpdater(CommandLineArgs args, RestHighLevelClient esNodeClient) {
         NominatimUpdater nominatimUpdater = new NominatimUpdater(args.getHost(), args.getPort(), args.getDatabase(), args.getUser(), args.getPassword());
         Updater updater = new de.komoot.photon.elasticsearch.Updater(esNodeClient, args.getLanguages());
         nominatimUpdater.setUpdater(updater);
