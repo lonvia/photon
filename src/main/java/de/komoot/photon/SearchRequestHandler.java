@@ -1,12 +1,11 @@
 package de.komoot.photon;
 
+import de.komoot.photon.lucene.LuceneSearcher;
 import de.komoot.photon.query.BadRequestException;
 import de.komoot.photon.query.PhotonRequest;
 import de.komoot.photon.query.PhotonRequestFactory;
-import de.komoot.photon.searcher.BaseElasticsearchSearcher;
 import de.komoot.photon.searcher.PhotonRequestHandler;
 import de.komoot.photon.utils.ConvertToGeoJson;
-import org.elasticsearch.client.Client;
 import org.json.JSONObject;
 import spark.Request;
 import spark.Response;
@@ -27,12 +26,12 @@ public class SearchRequestHandler extends RouteImpl {
     private final PhotonRequestHandler requestHandler;
     private final ConvertToGeoJson geoJsonConverter;
 
-    SearchRequestHandler(String path, Client esNodeClient, String languages, String defaultLanguage) {
+    SearchRequestHandler(String path, LuceneSearcher searcher, String languages, String defaultLanguage) {
         super(path);
         List<String> supportedLanguages = Arrays.asList(languages.split(","));
         this.photonRequestFactory = new PhotonRequestFactory(supportedLanguages, defaultLanguage);
         this.geoJsonConverter = new ConvertToGeoJson();
-        this.requestHandler = new PhotonRequestHandler(new BaseElasticsearchSearcher(esNodeClient), supportedLanguages);
+        this.requestHandler = new PhotonRequestHandler(searcher, supportedLanguages);
     }
 
     @Override

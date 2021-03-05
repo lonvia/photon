@@ -1,32 +1,32 @@
 package de.komoot.photon.searcher;
 
-import de.komoot.photon.query.ReverseQueryBuilder;
+import de.komoot.photon.lucene.LuceneQueryBuilder;
+import de.komoot.photon.lucene.LuceneSearchResponse;
+import de.komoot.photon.lucene.LuceneSearcher;
 import de.komoot.photon.query.ReverseRequest;
-import de.komoot.photon.utils.ConvertToJson;
-import org.elasticsearch.action.search.SearchResponse;
 import org.json.JSONObject;
 
 import java.util.List;
 
 public class ReverseRequestHandler {
-    private final ReverseElasticsearchSearcher elasticsearchSearcher;
+    private final LuceneSearcher searcher;
 
-    public ReverseRequestHandler(ReverseElasticsearchSearcher elasticsearchSearcher) {
-        this.elasticsearchSearcher = elasticsearchSearcher;
+    public ReverseRequestHandler(LuceneSearcher searcher) {
+        this.searcher = searcher;
     }
 
     public List<JSONObject> handle(ReverseRequest photonRequest) {
-        ReverseQueryBuilder queryBuilder = buildQuery(photonRequest);
-        SearchResponse results = elasticsearchSearcher.search(queryBuilder.buildQuery(), photonRequest.getLimit(), photonRequest.getLocation(),
-                photonRequest.getLocationDistanceSort());
-        List<JSONObject> resultJsonObjects = new ConvertToJson(photonRequest.getLanguage()).convert(results);
+        LuceneQueryBuilder queryBuilder = buildQuery(photonRequest);
+        LuceneSearchResponse results = searcher.search(queryBuilder, photonRequest.getLimit());
+        List<JSONObject> resultJsonObjects = searcher.convertToJSON(results);
         if (resultJsonObjects.size() > photonRequest.getLimit()) {
             resultJsonObjects = resultJsonObjects.subList(0, photonRequest.getLimit());
         }
         return resultJsonObjects;
     }
 
-    public ReverseQueryBuilder buildQuery(ReverseRequest photonRequest) {
-        return ReverseQueryBuilder.builder(photonRequest.getLocation(), photonRequest.getRadius(), photonRequest.getQueryStringFilter());
+    public LuceneQueryBuilder buildQuery(ReverseRequest photonRequest) {
+        return searcher.makeQueryBilder().
+                reverseLookup(photonRequest.getLocation(), photonRequest.getRadius(), photonRequest.getQueryStringFilter());
     }
 }

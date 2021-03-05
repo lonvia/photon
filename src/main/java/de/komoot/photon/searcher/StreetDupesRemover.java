@@ -3,7 +3,6 @@ package de.komoot.photon.searcher;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import de.komoot.photon.Constants;
-import de.komoot.photon.Utils;
 import org.json.JSONObject;
 
 import java.util.HashSet;
@@ -39,7 +38,7 @@ public class StreetDupesRemover {
                     String key = (properties.has(Constants.OSM_VALUE) ? properties.getString(Constants.OSM_VALUE) : "") + ":";
 
                     if (language.equals("nl")) {
-                        String onlyDigitsPostcode = Utils.stripNonDigits(postcode);
+                        String onlyDigitsPostcode = stripNonDigits(postcode);
                         key += onlyDigitsPostcode + ":" + name;
                     } else {
                         key += postcode + ":" + name;
@@ -55,5 +54,18 @@ public class StreetDupesRemover {
             filteredItems.add(result);
         }
         return filteredItems;
+    }
+
+
+    // http://stackoverflow.com/a/4031040/1437096
+    private static String stripNonDigits(final CharSequence input) {
+        final StringBuilder sb = new StringBuilder(input.length());
+        for (int i = 0; i < input.length(); i++) {
+            final char c = input.charAt(i);
+            if (c > 47 && c < 58) {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
     }
 }

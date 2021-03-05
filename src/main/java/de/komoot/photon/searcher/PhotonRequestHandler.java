@@ -1,9 +1,9 @@
 package de.komoot.photon.searcher;
 
-import de.komoot.photon.query.PhotonQueryBuilder;
+import de.komoot.photon.lucene.LuceneQueryBuilder;
+import de.komoot.photon.lucene.LuceneSearchResponse;
+import de.komoot.photon.lucene.LuceneSearcher;
 import de.komoot.photon.query.PhotonRequest;
-import de.komoot.photon.utils.ConvertToJson;
-import org.elasticsearch.action.search.SearchResponse;
 import org.json.JSONObject;
 
 import java.util.List;
@@ -16,27 +16,27 @@ import java.util.List;
  */
 public class PhotonRequestHandler {
 
-    private final BaseElasticsearchSearcher elasticsearchSearcher;
+    private final LuceneSearcher searcher;
     private final List<String> supportedLanguages;
     private boolean lastLenient = false;
 
-    public PhotonRequestHandler(BaseElasticsearchSearcher elasticsearchSearcher, List<String> supportedLanguages) {
-        this.elasticsearchSearcher = elasticsearchSearcher;
+    public PhotonRequestHandler(LuceneSearcher searcher, List<String> supportedLanguages) {
+        this.searcher = searcher;
         this.supportedLanguages = supportedLanguages;
     }
 
     public List<JSONObject> handle(PhotonRequest photonRequest) {
         lastLenient = false;
-        PhotonQueryBuilder queryBuilder = buildQuery(photonRequest, false);
+        LuceneQueryBuilder queryBuilder = buildQuery(photonRequest, false);
         // for the case of deduplication we need a bit more results, #300
         int limit = photonRequest.getLimit();
         int extLimit = limit > 1 ? (int) Math.round(photonRequest.getLimit() * 1.5) : 1;
-        SearchResponse results = elasticsearchSearcher.search(queryBuilder.buildQuery(), extLimit);
-        if (results.getHits().getTotalHits() == 0) {
+        LuceneSearchResponse results = searcher.search(queryBuilder, extLimit);
+        if (results.getHits() == 0) {
             lastLenient = true;
-            results = elasticsearchSearcher.search(buildQuery(photonRequest, true).buildQuery(), extLimit);
+            results = searcher.search(buildQuery(photonRequest, true), extLimit);
         }
-        List<JSONObject> resultJsonObjects = new ConvertToJson(photonRequest.getLanguage()).convert(results);
+        List<JSONObject> resultJsonObjects = searcher.convertToJSON(results);
         StreetDupesRemover streetDupesRemover = new StreetDupesRemover(photonRequest.getLanguage());
         resultJsonObjects = streetDupesRemover.execute(resultJsonObjects);
         if (resultJsonObjects.size() > limit) {
@@ -46,13 +46,13 @@ public class PhotonRequestHandler {
     }
 
     public String dumpQuery(PhotonRequest photonRequest) {
-        return buildQuery(photonRequest, lastLenient).buildQuery().toString();
+        return buildQuery(photonRequest, lastLenient).toJSONString();
     }
 
-   public PhotonQueryBuilder buildQuery(PhotonRequest photonRequest, boolean lenient) {
-        return PhotonQueryBuilder.
-                builder(photonRequest.getQuery(), photonRequest.getLanguage(), supportedLanguages, lenient).
-                withTags(photonRequest.tags()).
+   public LuceneQueryBuilder buildQuery(PhotonRequest photonRequest, boolean lenient) {
+        return searcher.makeQueryBilder().
+                searchQuery(photonRequest.getQuery(), photonRequest.getLanguage(), supportedLanguages, lenient);
+                /*withTags(photonRequest.tags()).
                 withKeys(photonRequest.keys()).
                 withValues(photonRequest.values()).
                 withoutTags(photonRequest.notTags()).
@@ -60,6 +60,6 @@ public class PhotonRequestHandler {
                 withoutValues(photonRequest.notValues()).
                 withTagsNotValues(photonRequest.tagNotValues()).
                 withLocationBias(photonRequest.getLocationForBias(), photonRequest.getScaleForBias()).
-                withBoundingBox(photonRequest.getBbox());
+                withBoundingBox(photonRequest.getBbox());*/
     }
 }

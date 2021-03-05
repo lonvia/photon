@@ -3,17 +3,12 @@ package de.komoot.photon;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
-import de.komoot.photon.elasticsearch.Server;
+import de.komoot.photon.lucene.LuceneBackend;
+import de.komoot.photon.lucene.LuceneSearcher;
 import de.komoot.photon.nominatim.NominatimConnector;
 import de.komoot.photon.nominatim.NominatimUpdater;
 import de.komoot.photon.utils.CorsFilter;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.client.Client;
-import spark.Request;
-import spark.Response;
-
-import java.io.FileNotFoundException;
-import java.io.IOException;
 
 import static spark.Spark.*;
 
@@ -42,98 +37,47 @@ public class App {
             return;
         }
 
-        if (args.getJsonDump() != null) {
-            startJsonDump(args);
+
+        LuceneBackend backend = new LuceneBackend(args);
+
+        if (args.isRecreateIndex()) {
+            startRecreatingIndex(backend);
             return;
         }
 
-        boolean shutdownES = false;
-        final Server esServer = new Server(args).start();
-        try {
-            Client esClient = esServer.getClient();
-
-            log.info("Make sure that the ES cluster is ready, this might take some time.");
-            esClient.admin().cluster().prepareHealth().setWaitForYellowStatus().get();
-            log.info("ES cluster is now ready.");
-
-            if (args.isRecreateIndex()) {
-                shutdownES = true;
-                startRecreatingIndex(esServer);
-                return;
-            }
-
-            if (args.isNominatimImport()) {
-                shutdownES = true;
-                startNominatimImport(args, esServer, esClient);
-                return;
-            }
-
-            if (args.isNominatimUpdate()) {
-                shutdownES = true;
-                final NominatimUpdater nominatimUpdater = setupNominatimUpdater(args, esClient);
-                nominatimUpdater.update();
-                return;
-            }
-
-            // no special action specified -> normal mode: start search API
-            startApi(args, esClient);
-        } finally {
-            if (shutdownES) esServer.shutdown();
+        if (args.isNominatimImport()) {
+            startNominatimImport(backend, args);
+            return;
         }
+
+        if (args.isNominatimUpdate()) {
+            startNominatimUpdater(backend, args);
+            return;
+        }
+
+        // no special action specified -> normal mode: start search API
+        startApi(backend, args);
     }
 
 
-    /**
-     * dump elastic search index and create a new and empty one
-     *
-     * @param esServer
-     */
-    private static void startRecreatingIndex(Server esServer) {
-        try {
-            esServer.recreateIndex();
-        } catch (IOException e) {
-            throw new RuntimeException("cannot setup index, elastic search config files not readable", e);
-        }
+    private static void startRecreatingIndex(LuceneBackend backend) {
+        backend.recreateIndex();
 
         log.info("deleted photon index and created an empty new one.");
     }
 
 
-    /**
-     * take nominatim data and dump it to json
-     *
-     * @param args
-     */
-    private static void startJsonDump(CommandLineArgs args) {
-        try {
-            final String filename = args.getJsonDump();
-            final JsonDumper jsonDumper = new JsonDumper(filename, args.getLanguages());
-            NominatimConnector nominatimConnector = new NominatimConnector(args.getHost(), args.getPort(), args.getDatabase(), args.getUser(), args.getPassword());
-            nominatimConnector.setImporter(jsonDumper);
-            nominatimConnector.readEntireDatabase(args.getCountryCodes().split(","));
-            log.info("json dump was created: " + filename);
-        } catch (FileNotFoundException e) {
-            log.error("cannot create dump", e);
-        }
-    }
 
 
     /**
      * take nominatim data to fill elastic search index
-     *
-     * @param args
-     * @param esServer
-     * @param esNodeClient
+
      */
-    private static void startNominatimImport(CommandLineArgs args, Server esServer, Client esNodeClient) {
-        try {
-            esServer.recreateIndex(); // dump previous data
-        } catch (IOException e) {
-            throw new RuntimeException("cannot setup index, elastic search config files not readable", e);
-        }
+    private static void startNominatimImport(LuceneBackend backend, CommandLineArgs args) {
+        backend.recreateIndex(); // dump previous data
 
         log.info("starting import from nominatim to photon with languages: " + args.getLanguages());
-        de.komoot.photon.elasticsearch.Importer importer = new de.komoot.photon.elasticsearch.Importer(esNodeClient, args.getLanguages());
+        de.komoot.photon.Importer importer = backend.getImporter();
         NominatimConnector nominatimConnector = new NominatimConnector(args.getHost(), args.getPort(), args.getDatabase(), args.getUser(), args.getPassword());
         nominatimConnector.setImporter(importer);
         nominatimConnector.readEntireDatabase(args.getCountryCodes().split(","));
@@ -143,24 +87,20 @@ public class App {
 
     /**
      * Prepare Nominatim updater
-     *
-     * @param args
-     * @param esNodeClient
+
      */
-    private static NominatimUpdater setupNominatimUpdater(CommandLineArgs args, Client esNodeClient) {
+    private static void startNominatimUpdater(LuceneBackend backend, CommandLineArgs args) {
         NominatimUpdater nominatimUpdater = new NominatimUpdater(args.getHost(), args.getPort(), args.getDatabase(), args.getUser(), args.getPassword());
-        Updater updater = new de.komoot.photon.elasticsearch.Updater(esNodeClient, args.getLanguages());
+        Updater updater = backend.getUpdater();
         nominatimUpdater.setUpdater(updater);
-        return nominatimUpdater;
+        nominatimUpdater.update();
     }
 
     /**
      * start api to accept search requests via http
      *
-     * @param args
-     * @param esNodeClient
      */
-    private static void startApi(CommandLineArgs args, Client esNodeClient) {
+    private static void startApi(LuceneBackend backend, CommandLineArgs args) {
         port(args.getListenPort());
         ipAddress(args.getListenIp());
 
@@ -173,17 +113,19 @@ public class App {
             });
         }
 
-        // setup search API
-        get("api", new SearchRequestHandler("api", esNodeClient, args.getLanguages(), args.getDefaultLanguage()));
-        get("api/", new SearchRequestHandler("api/", esNodeClient, args.getLanguages(), args.getDefaultLanguage()));
-        get("reverse", new ReverseSearchRequestHandler("reverse", esNodeClient, args.getLanguages(), args.getDefaultLanguage()));
-        get("reverse/", new ReverseSearchRequestHandler("reverse/", esNodeClient, args.getLanguages(), args.getDefaultLanguage()));
+        LuceneSearcher backend_searcher = backend.getSearcher();
 
-        // setup update API
+        // setup search API
+        get("api", new SearchRequestHandler("api", backend_searcher, args.getLanguages(), args.getDefaultLanguage()));
+        get("api/", new SearchRequestHandler("api/", backend_searcher, args.getLanguages(), args.getDefaultLanguage()));
+        get("reverse", new ReverseSearchRequestHandler("reverse", backend_searcher, args.getLanguages(), args.getDefaultLanguage()));
+        get("reverse/", new ReverseSearchRequestHandler("reverse/", backend_searcher, args.getLanguages(), args.getDefaultLanguage()));
+
+/*        // setup update API
         final NominatimUpdater nominatimUpdater = setupNominatimUpdater(args, esNodeClient);
         get("/nominatim-update", (Request request, Response response) -> {
             new Thread(() -> nominatimUpdater.update()).start();
             return "nominatim update started (more information in console output) ...";
-        });
+        });*/
     }
 }

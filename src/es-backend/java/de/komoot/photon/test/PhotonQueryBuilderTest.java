@@ -1,6 +1,6 @@
 package de.komoot.photon.query;
 
-import de.komoot.photon.utils.QueryToJson;
+import de.komoot.photon.QueryToJson;
 import org.apache.commons.io.IOUtils;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
