@@ -10,7 +10,7 @@ public class LuceneBackend {
     private final String languages;
 
     public LuceneBackend(CommandLineArgs args) {
-        this.indexPath = args.getDataDirectory();
+        this.indexPath = args.getDataDirectory() + "/photon_data";
         this.languages = args.getLanguages();
     }
 
