@@ -17,8 +17,8 @@ public class LuceneUpdater implements Updater {
 
     private final IndexWriter writer;
 
-    LuceneUpdater(String indexPath, String languages) throws IOException {
-        this.languages = languages.split(",");
+    LuceneUpdater(String indexPath, String[] languages) throws IOException {
+        this.languages = languages;
 
         Directory dir = FSDirectory.open(Paths.get(indexPath));
         Analyzer analyser = new StandardAnalyzer();

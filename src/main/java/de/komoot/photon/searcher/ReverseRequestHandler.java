@@ -18,7 +18,7 @@ public class ReverseRequestHandler {
     public List<JSONObject> handle(ReverseRequest photonRequest) {
         LuceneQueryBuilder queryBuilder = buildQuery(photonRequest);
         LuceneSearchResponse results = searcher.search(queryBuilder, photonRequest.getLimit());
-        List<JSONObject> resultJsonObjects = searcher.convertToJSON(results);
+        List<JSONObject> resultJsonObjects = results.convertToJSON(photonRequest.getLanguage());
         if (resultJsonObjects.size() > photonRequest.getLimit()) {
             resultJsonObjects = resultJsonObjects.subList(0, photonRequest.getLimit());
         }

@@ -31,7 +31,7 @@ public class SearchRequestHandler extends RouteImpl {
         List<String> supportedLanguages = Arrays.asList(languages.split(","));
         this.photonRequestFactory = new PhotonRequestFactory(supportedLanguages, defaultLanguage);
         this.geoJsonConverter = new ConvertToGeoJson();
-        this.requestHandler = new PhotonRequestHandler(searcher, supportedLanguages);
+        this.requestHandler = new PhotonRequestHandler(searcher);
     }
 
     @Override

@@ -27,8 +27,8 @@ public class LuceneImporter implements de.komoot.photon.Importer {
         public void operation(String k, String v);
     }
 
-    LuceneImporter(String indexPath, String languages) throws IOException {
-        this.languages = languages.split(",");
+    LuceneImporter(String indexPath, String[] languages) throws IOException {
+        this.languages = languages;
 
         Directory dir = FSDirectory.open(Paths.get(indexPath));
         Analyzer analyser = new StandardAnalyzer();
@@ -102,7 +102,7 @@ public class LuceneImporter implements de.komoot.photon.Importer {
         convertContext(doc.getContext()).forEach((k, v) -> {
             if (!v.isEmpty()) {
                 collectors.get(k).addAll(v);
-                dbdoc.add(new StoredField("context." + k, String.join(",", v)));
+                dbdoc.add(new StoredField("context." + k, String.join(" ", v)));
             }
         });
 
@@ -114,15 +114,15 @@ public class LuceneImporter implements de.komoot.photon.Importer {
         doc.getAddressParts().forEach((kind, amap) -> {
             convertNames(amap, false, (k, v) -> {
                 collectors.getOrDefault(k, collectors.get("default")).add(v);
-                dbdoc.add(new StoredField(kind + ":" + k, v));
+                dbdoc.add(new StoredField(kind.getName() + "." + k, v));
             });
         });
 
         collectors.forEach((k, v) -> {
             if (!v.isEmpty()) {
                 // TODO provide appropriate analysers
-                dbdoc.add(new TextField("collector." + k + ".ngrams", String.join(",", v), Field.Store.NO));
-                dbdoc.add(new TextField("collector." + k + ".raw", String.join(",", v), Field.Store.NO));
+                dbdoc.add(new TextField("collector." + k + ".ngrams", String.join(" ", v), Field.Store.YES));
+                dbdoc.add(new TextField("collector." + k + ".raw", String.join(" ", v), Field.Store.NO));
             }
         });
 
@@ -145,24 +145,25 @@ public class LuceneImporter implements de.komoot.photon.Importer {
 
     private void convertNames(Map<String, String> names, boolean extra, KeyValueConverter conv) {
         names.forEach((k, v) -> {
+            if ("name".equals(k)) conv.operation("default", v);
+
             if (extra) {
-                if (k == "name") conv.operation("default", v);
-                if (k == "alt_name") conv.operation("alt", v);
-                if (k == "int_name") conv.operation("int", v);
-                if (k == "loc_name") conv.operation("loc", v);
-                if (k == "old_name") conv.operation("old", v);
-                if (k == "reg_name") conv.operation("reg", v);
-                if (k == "addr:housename") conv.operation("housename", v);
+                if ("alt_name".equals(k)) conv.operation("alt", v);
+                if ("int_name".equals(k)) conv.operation("int", v);
+                if ("loc_name".equals(k)) conv.operation("loc", v);
+                if ("old_name".equals(k)) conv.operation("old", v);
+                if ("reg_name".equals(k)) conv.operation("reg", v);
+                if ("addr:housename".equals(k)) conv.operation("housename", v);
             }
 
             for (String lang : languages) {
-                if (k == "name:" + lang) conv.operation(lang, v);
+                if (("name:" + lang).equals(k)) conv.operation(lang, v);
             }
         });
     }
 
     private void appendIf(Set<String> stringsSet, String value) {
-        if (value == null || value.isEmpty())
+        if (value != null && !value.isEmpty())
             stringsSet.add(value);
 ;
     }

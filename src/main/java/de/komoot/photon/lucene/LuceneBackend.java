@@ -7,11 +7,11 @@ import java.io.IOException;
 
 public class LuceneBackend {
     private final String indexPath;
-    private final String languages;
+    private final String[] languages;
 
     public LuceneBackend(CommandLineArgs args) {
         this.indexPath = args.getDataDirectory() + "/photon_data";
-        this.languages = args.getLanguages();
+        this.languages = args.getLanguages().split(",");
     }
 
     public void recreateIndex() {
@@ -36,6 +36,10 @@ public class LuceneBackend {
     }
 
     public LuceneSearcher getSearcher() {
-        return new LuceneSearcher();
+        try {
+            return new LuceneSearcher(indexPath, languages);
+        } catch (IOException e) {
+            throw new RuntimeException("Cannot open search index.", e);
+        }
     }
 }

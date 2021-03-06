@@ -17,12 +17,10 @@ import java.util.List;
 public class PhotonRequestHandler {
 
     private final LuceneSearcher searcher;
-    private final List<String> supportedLanguages;
     private boolean lastLenient = false;
 
-    public PhotonRequestHandler(LuceneSearcher searcher, List<String> supportedLanguages) {
+    public PhotonRequestHandler(LuceneSearcher searcher) {
         this.searcher = searcher;
-        this.supportedLanguages = supportedLanguages;
     }
 
     public List<JSONObject> handle(PhotonRequest photonRequest) {
@@ -36,7 +34,7 @@ public class PhotonRequestHandler {
             lastLenient = true;
             results = searcher.search(buildQuery(photonRequest, true), extLimit);
         }
-        List<JSONObject> resultJsonObjects = searcher.convertToJSON(results);
+        List<JSONObject> resultJsonObjects = results.convertToJSON(photonRequest.getLanguage());
         StreetDupesRemover streetDupesRemover = new StreetDupesRemover(photonRequest.getLanguage());
         resultJsonObjects = streetDupesRemover.execute(resultJsonObjects);
         if (resultJsonObjects.size() > limit) {
@@ -51,7 +49,7 @@ public class PhotonRequestHandler {
 
    public LuceneQueryBuilder buildQuery(PhotonRequest photonRequest, boolean lenient) {
         return searcher.makeQueryBilder().
-                searchQuery(photonRequest.getQuery(), photonRequest.getLanguage(), supportedLanguages, lenient);
+                searchQuery(photonRequest.getQuery(), photonRequest.getLanguage(), lenient);
                 /*withTags(photonRequest.tags()).
                 withKeys(photonRequest.keys()).
                 withValues(photonRequest.values()).
