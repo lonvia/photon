@@ -191,51 +191,6 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.1.1</version>
-                <executions>
-                    <execution>
-                        <id>copy-painless</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <artifactItems>
-                        <artifactItem>
-                            <groupId>org.codelibs.elasticsearch.module</groupId>
-                            <artifactId>lang-painless</artifactId>
-                            <version>${elasticsearch.version}</version>
-                            <type>jar</type>
-                            <overWrite>false</overWrite>
-                            <outputDirectory>${project.build.directory}/es/modules/lang-painless</outputDirectory>
-                            <destFileName>lang-painless.jar</destFileName>
-                        </artifactItem>
-                        <artifactItem>
-                            <groupId>org.ow2.asm</groupId>
-                            <artifactId>asm-debug-all</artifactId>
-                            <version>5.1</version>
-                            <type>jar</type>
-                            <overWrite>false</overWrite>
-                            <outputDirectory>${project.build.directory}/es/modules/lang-painless</outputDirectory>
-                            <destFileName>asm-debug-all.jar</destFileName>
-                        </artifactItem>
-                        <artifactItem>
-                            <groupId>org.antlr</groupId>
-                            <artifactId>antlr4-runtime</artifactId>
-                            <version>4.5.1-1</version>
-                            <type>jar</type>
-                            <overWrite>false</overWrite>
-                            <outputDirectory>${project.build.directory}/es/modules/lang-painless</outputDirectory>
-                            <destFileName>antlr4-runtime.jar</destFileName>
-                        </artifactItem>
-                    </artifactItems>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
                 <version>2.6</version>
             </plugin>
