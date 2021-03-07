@@ -31,7 +31,7 @@ public class LuceneImporter implements de.komoot.photon.Importer {
         this.languages = languages;
 
         Directory dir = FSDirectory.open(Paths.get(indexPath));
-        Analyzer analyser = new StandardAnalyzer();
+        Analyzer analyser = new IndexAnalyzer();
         IndexWriterConfig iwc = new IndexWriterConfig(analyser);
         iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
 
@@ -100,10 +100,7 @@ public class LuceneImporter implements de.komoot.photon.Importer {
         }
 
         convertContext(doc.getContext()).forEach((k, v) -> {
-            if (!v.isEmpty()) {
-                collectors.get(k).addAll(v);
-                dbdoc.add(new StoredField("context." + k, String.join(" ", v)));
-            }
+            collectors.get(k).addAll(v);
         });
 
         convertNames(doc.getName(), true, (k, v) -> {
@@ -119,10 +116,10 @@ public class LuceneImporter implements de.komoot.photon.Importer {
         });
 
         collectors.forEach((k, v) -> {
-            if (!v.isEmpty()) {
+            for (String term : v) {
                 // TODO provide appropriate analysers
-                dbdoc.add(new TextField("collector." + k + ".ngrams", String.join(" ", v), Field.Store.YES));
-                dbdoc.add(new TextField("collector." + k + ".raw", String.join(" ", v), Field.Store.NO));
+                dbdoc.add(new TextField("collector." + k + ".ngrams", term, Field.Store.YES));
+                dbdoc.add(new TextField("collector." + k + ".raw", term, Field.Store.NO));
             }
         });
 
