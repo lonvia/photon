@@ -27,7 +27,7 @@ public class LuceneSearcher {
 
        IndexReader reader = DirectoryReader.open(FSDirectory.open(Paths.get(indexPath)));
        searcher = new IndexSearcher(reader);
-       analyzer = new StandardAnalyzer();
+       analyzer = new SearchAnalyzer();
     }
 
     public LuceneQueryBuilder makeQueryBilder() {
