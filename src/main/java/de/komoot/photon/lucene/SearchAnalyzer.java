@@ -62,7 +62,7 @@ public class SearchAnalyzer extends AnalyzerWrapper {
 
     @Override
     protected Analyzer getWrappedAnalyzer(String fieldName) {
-        if (fieldName.endsWith(".ngram")) {
+        if (fieldName.endsWith(".ngrams")) {
             return ngramAnalyzer;
         }
 
