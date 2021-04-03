@@ -9,8 +9,10 @@ import de.komoot.photon.elasticsearch.PhotonIndex;
 import de.komoot.photon.elasticsearch.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetRequestBuilder;
 import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.client.Client;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.After;
 
 import java.io.File;
@@ -34,8 +36,8 @@ public class ESBaseTester {
         return new PhotonDoc(id, "W", osmId, key, value).names(nameMap).centroid(location);
     }
 
-    protected GetResponse getById(int id) {
-        return getClient().prepareGet(PhotonIndex.NAME,PhotonIndex.TYPE, String.valueOf(id)).execute().actionGet();
+    protected GetResponse getById(int id) throws IOException {
+        return getClient().get(new GetRequest(PhotonIndex.NAME,PhotonIndex.TYPE, String.valueOf(id)));
     }
 
 
@@ -56,7 +58,7 @@ public class ESBaseTester {
         refresh();
     }
 
-    protected Client getClient() {
+    protected RestHighLevelClient getClient() {
         if (server == null) {
             throw new RuntimeException("call setUpES before using getClient");
         }
@@ -65,7 +67,8 @@ public class ESBaseTester {
     }
 
     protected void refresh() {
-        getClient().admin().indices().refresh(new RefreshRequest(PhotonIndex.NAME)).actionGet();
+        // TODO readd for ES 6
+        //getClient().indices().refresh(new RefreshRequest(PhotonIndex.NAME)).actionGet();
     }
 
     /**

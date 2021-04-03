@@ -8,7 +8,6 @@ import de.komoot.photon.nominatim.NominatimConnector;
 import de.komoot.photon.nominatim.NominatimUpdater;
 import de.komoot.photon.utils.CorsFilter;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.client.Client;
 import org.elasticsearch.client.RestHighLevelClient;
 import spark.Request;
 import spark.Response;
@@ -158,7 +157,7 @@ public class App {
      * @param args
      * @param esNodeClient
      */
-    private static void startApi(CommandLineArgs args, Client esNodeClient) {
+    private static void startApi(CommandLineArgs args, RestHighLevelClient esNodeClient) {
         port(args.getListenPort());
         ipAddress(args.getListenIp());
 
@@ -170,13 +169,13 @@ public class App {
                 response.type("application/json; charset=UTF-8"); // in the other case set by enableCors
             });
         }
-
+/*
         // setup search API
         get("api", new SearchRequestHandler("api", esNodeClient, args.getLanguages(), args.getDefaultLanguage()));
         get("api/", new SearchRequestHandler("api/", esNodeClient, args.getLanguages(), args.getDefaultLanguage()));
         get("reverse", new ReverseSearchRequestHandler("reverse", esNodeClient, args.getLanguages(), args.getDefaultLanguage()));
         get("reverse/", new ReverseSearchRequestHandler("reverse/", esNodeClient, args.getLanguages(), args.getDefaultLanguage()));
-
+*/
         // setup update API
         final NominatimUpdater nominatimUpdater = setupNominatimUpdater(args, esNodeClient);
         get("/nominatim-update", (Request request, Response response) -> {

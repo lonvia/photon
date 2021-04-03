@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.client.RestHighLevelClient;
 
@@ -35,7 +36,9 @@ public class Updater implements de.komoot.photon.Updater {
     @Override
     public void create(PhotonDoc doc) {
         try {
-            this.bulkRequest.add(this.esClient.prepareIndex(PhotonIndex.NAME, PhotonIndex.TYPE).setSource(Utils.convert(doc, this.languages)).setId(String.valueOf(doc.getPlaceId())));
+            IndexRequest idx = new IndexRequest(PhotonIndex.NAME).type(PhotonIndex.TYPE)
+                    .source(Utils.convert(doc, this.languages)).id(doc.getUid());
+            this.bulkRequest.add(idx);
         } catch (IOException e) {
             log.error(String.format("creation of new doc [%s] failed", doc), e);
         }

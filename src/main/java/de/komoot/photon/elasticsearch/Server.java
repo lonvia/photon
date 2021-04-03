@@ -5,36 +5,37 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.entity.ContentType;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.nio.entity.NStringEntity;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.client.Client;
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.node.InternalSettingsPreparer;
 import org.elasticsearch.node.Node;
-import org.elasticsearch.node.NodeValidationException;
 import org.elasticsearch.plugins.Plugin;
-import org.elasticsearch.transport.Netty4Plugin;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * Helper class to start/stop elasticsearch node and get elasticsearch clients
@@ -43,8 +44,6 @@ import java.util.*;
  */
 @Slf4j
 public class Server {
-    private Node esNode;
-
     private RestClient lowLevelRestClient;
     private RestHighLevelClient esClient;
 
@@ -84,28 +83,19 @@ public class Server {
     }
 
     public Server start() {
-        Settings.Builder sBuilder = Settings.builder();
-        sBuilder.put("path.home", this.esDirectory.toString());
-        sBuilder.put("network.host", "127.0.0.1"); // http://stackoverflow.com/a/15509589/1245622
-        sBuilder.put("cluster.name", clusterName);
+        final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials("admin", "admin"));
 
-
-            try {
-                sBuilder.put("transport.type", "netty4").put("http.type", "netty4").put("http.enabled", "true");
-                Settings settings = sBuilder.build();
-                Collection<Class<? extends Plugin>> lList = new LinkedList<>();
-                lList.add(Netty4Plugin.class);
-                esNode = new MyNode(settings, lList);
-                esNode.start();
-
-                log.info("started elastic search node");
-
-            } catch (NodeValidationException e) {
-                throw new RuntimeException("Error while starting elasticsearch server", e);
-            }
-
-
-        lowLevelRestClient = RestClient.builder(new HttpHost("host", 9200, "http")).build();
+        lowLevelRestClient = RestClient.builder(
+                new HttpHost("localhost", 9200))
+                .setHttpClientConfigCallback(new RestClientBuilder.HttpClientConfigCallback() {
+                    @Override
+                    public HttpAsyncClientBuilder customizeHttpClient(
+                            HttpAsyncClientBuilder httpClientBuilder) {
+                        return httpClientBuilder
+                                .setDefaultCredentialsProvider(credentialsProvider);
+                    }
+                }).build();
         esClient = new RestHighLevelClient(lowLevelRestClient);
 
         return this;
@@ -116,9 +106,6 @@ public class Server {
      */
     public void shutdown() {
         try {
-            if (esNode != null)
-                esNode.close();
-
             lowLevelRestClient.close();
         } catch (IOException e) {
             throw new RuntimeException("Error during elasticsearch server shutdown", e);
@@ -183,18 +170,14 @@ public class Server {
 
         // add all langs to the mapping
         mappingsJSON = addLangsToMapping(mappingsJSON);
+        log.warn(mappingsJSON.toString(2));
 
-        String payload = XContentFactory.jsonBuilder()
-        .startObject()
-            .startObject("settings")
-                .value(settings)
-            .endObject()
-            .startObject("mappings")
-                .value(mappingsJSON)
-            .endObject()
-        .endObject().string();
+        JSONObject payload = new JSONObject();
+        payload.put("settings", settings);
+        payload.put("mappings", mappingsJSON.get("place"));
 
-        lowLevelRestClient.performRequest(" PUT", PhotonIndex.NAME, Collections.emptyMap(), new NStringEntity(payload, ContentType.APPLICATION_JSON));
+        lowLevelRestClient.performRequest("PUT", PhotonIndex.NAME, Collections.emptyMap(),
+                new NStringEntity(payload.toString(), ContentType.APPLICATION_JSON));
 
         log.info("Mapping created for {}.", PhotonIndex.NAME);
     }
@@ -206,6 +189,10 @@ public class Server {
             esClient.delete(request);
         } catch (IOException e) {
             // ignore
+        } catch (ElasticsearchStatusException e) {
+            if (e.status().getStatus() != 404) {
+                throw e;
+            }
         }
     }
 
