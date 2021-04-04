@@ -15,6 +15,7 @@ public class AddressRow {
     private final String osmKey;
     private final String osmValue;
     private final int rankAddress;
+    private final double importance;
 
     public AddressType getAddressType() {
         return AddressType.fromRank(rankAddress);

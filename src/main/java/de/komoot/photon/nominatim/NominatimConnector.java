@@ -27,11 +27,12 @@ import java.util.Map;
 public class NominatimConnector {
     private static final String SELECT_COLS_PLACEX = "SELECT place_id, osm_type, osm_id, class, type, name, housenumber, postcode, address, extratags, ST_Envelope(geometry) AS bbox, parent_place_id, linked_place_id, rank_address, rank_search, importance, country_code, centroid";
     private static final String SELECT_COLS_OSMLINE = "SELECT place_id, osm_id, parent_place_id, startnumber, endnumber, interpolationtype, postcode, country_code, linegeo";
-    private static final String SELECT_COLS_ADDRESS = "SELECT p.name, p.class, p.type, p.rank_address";
+    private static final String SELECT_COLS_ADDRESS = "SELECT p.name, p.class, p.type, p.rank_address, COALESCE(p.importance,0.75-(p.rank_search::float/40)) as importance";
 
     private final DBDataAdapter dbutils;
     private final JdbcTemplate template;
     private Map<String, Map<String, String>> countryNames;
+    private Map<String, Double> countryImportances;
     /**
      * Maps a row from location_property_osmline (address interpolation lines) to a photon doc.
      */
@@ -137,6 +138,18 @@ public class NominatimConnector {
         return countryNames.get(countrycode);
     }
 
+    private Double getCountryImportance(String countrycode) {
+        if (countryImportances == null) {
+            countryImportances = new HashMap<>();
+            template.query("SELECT country_code, max(importance) as importance from placex where rank_address = 4 and admin_level = 2 and country_code is not null group by country_code",
+                    rs -> {
+                        countryImportances.put(rs.getString("country_code"), rs.getDouble("importance"));
+                    });
+        }
+
+        return countryImportances.getOrDefault(countrycode, 0.55);
+    }
+
     public void setImporter(Importer importer) {
         this.importer = importer;
     }
@@ -166,7 +179,8 @@ public class NominatimConnector {
                 dbutils.getMap(rs, "name"),
                 rs.getString("class"),
                 rs.getString("type"),
-                rs.getInt("rank_address")
+                rs.getInt("rank_address"),
+                rs.getDouble("importance")
         );
 
         AddressType atype = doc.getAddressType();
@@ -264,6 +278,8 @@ public class NominatimConnector {
         importThread.finish();
     }
 
+    private static final int[] IMPORTANCE_RANKS = {30, 16, 12, 8};
+    private static final double[] IMPORTANCE_WEIGHT = {0.5, 0.2, 0.1, 0.1};
     /**
      * querying nominatim's address hierarchy to complete photon doc with missing data (like country, city, street, ...)
      *
@@ -271,7 +287,16 @@ public class NominatimConnector {
      */
     private void completePlace(PhotonDoc doc) {
         final List<AddressRow> addresses = getAddresses(doc);
+
         final AddressType doctype = doc.getAddressType();
+
+        int[] usedRanks = {30, 30, 30, 30};
+        double[] importances = new double[4];
+        for (int i = 0; i < 4; ++i) {
+            importances[i] = doc.getImportance();
+        }
+
+
         for (AddressRow address : addresses) {
             AddressType atype = address.getAddressType();
 
@@ -281,6 +306,19 @@ public class NominatimConnector {
                 // no specifically handled item, check if useful for context
                 doc.getContext().add(address.getName());
             }
+
+            for (int i = 0; i < 4; ++i) {
+                if (usedRanks[i] > address.getRankAddress() && address.getRankAddress() >= IMPORTANCE_RANKS[i]) {
+                    usedRanks[i] = address.getRankAddress();
+                    importances[i] = address.getImportance();
+                }
+            }
         }
+
+        double final_importance = 0.2 * getCountryImportance(doc.getCountryCode().getAlpha2());
+        for (int i = 0; i < 4; ++i) {
+            final_importance += IMPORTANCE_WEIGHT[i] * importances[i];
+        }
+        doc.importance(final_importance);
     }
 }
