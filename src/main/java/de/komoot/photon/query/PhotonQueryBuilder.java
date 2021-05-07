@@ -34,7 +34,7 @@ import static com.google.common.collect.Maps.newHashMap;
  * Created by Sachin Dole on 2/12/2015.
  */
 public class PhotonQueryBuilder {
-    private FunctionScoreQueryBuilder finalQueryWithoutTagFilterBuilder;
+    private QueryBuilder finalQueryWithoutTagFilterBuilder;
 
     private BoolQueryBuilder queryBuilderForTopLevelFilter;
 
@@ -48,13 +48,10 @@ public class PhotonQueryBuilder {
 
     private BoolQueryBuilder finalQueryBuilder;
 
-    protected ArrayList<FilterFunctionBuilder> alFilterFunction4QueryBuilder = new ArrayList<>(1);
-
-    protected BoolQueryBuilder query4QueryBuilder;
 
 
     private PhotonQueryBuilder(String query, String language, List<String> languages, boolean lenient) {
-        query4QueryBuilder = QueryBuilders.boolQuery();
+        BoolQueryBuilder query4QueryBuilder = QueryBuilders.boolQuery();
 
         if (lenient) {
             BoolQueryBuilder builder = QueryBuilders.boolQuery()
@@ -83,20 +80,28 @@ public class PhotonQueryBuilder {
         }
 
         query4QueryBuilder
-                .should(QueryBuilders.matchQuery(String.format("name.%s.raw", language), query).boost(200)
-                        .analyzer("search_raw"))
-                .should(QueryBuilders.matchQuery(String.format("collector.%s.raw", language), query).boost(100)
-                        .analyzer("search_raw"));
+                .should(QueryBuilders.matchQuery(String.format("name.%s.raw", language), query).analyzer("search_raw"))
+                .should(QueryBuilders.matchQuery(String.format("collector.%s.raw", language), query).analyzer("search_raw"));
+
+
+        BoolQueryBuilder nameQueryBuilder = QueryBuilders.boolQuery()
+                .should(QueryBuilders.matchQuery("housenumber", query).analyzer("standard"))
+                .should(QueryBuilders.matchQuery(String.format("name.%s.ngrams", language), query).analyzer("search_ngram"));
 
         // this is former general-score, now inline
-        String strCode = "double score = 1 + doc['importance'].value * 100; score";
+        String strCode = "double score = 1 + 6 * doc['importance'].value; score";
         ScriptScoreFunctionBuilder functionBuilder4QueryBuilder =
                 ScoreFunctionBuilders.scriptFunction(new Script(ScriptType.INLINE, "painless", strCode, new HashMap<String, Object>()));
 
+        ArrayList<FilterFunctionBuilder> alFilterFunction4QueryBuilder = new ArrayList<>(1);
         alFilterFunction4QueryBuilder.add(new FilterFunctionBuilder(functionBuilder4QueryBuilder));
 
-        finalQueryWithoutTagFilterBuilder = new FunctionScoreQueryBuilder(query4QueryBuilder, alFilterFunction4QueryBuilder.toArray(new FilterFunctionBuilder[0]))
-                .boostMode(CombineFunction.MULTIPLY).scoreMode(ScoreMode.MULTIPLY);
+        FunctionScoreQueryBuilder scoredNameQueryBuilder = new FunctionScoreQueryBuilder(nameQueryBuilder, alFilterFunction4QueryBuilder.toArray(new FilterFunctionBuilder[0]))
+                .boostMode(CombineFunction.MULTIPLY).scoreMode(ScoreMode.MAX);
+
+        query4QueryBuilder.must(scoredNameQueryBuilder.boost(2));
+
+        finalQueryWithoutTagFilterBuilder = query4QueryBuilder;
 
         // @formatter:off
         queryBuilderForTopLevelFilter = QueryBuilders.boolQuery()
@@ -131,9 +136,10 @@ public class PhotonQueryBuilder {
                 "double score = 0.1 + " + scale + " / (1.0 + dist * 0.001 / 10.0); " +
                 "score";
         ScriptScoreFunctionBuilder builder = ScoreFunctionBuilders.scriptFunction(new Script(ScriptType.INLINE, "painless", strCode, params));
+        ArrayList<FilterFunctionBuilder> alFilterFunction4QueryBuilder = new ArrayList<>(1);
         alFilterFunction4QueryBuilder.add(new FilterFunctionBuilder(builder));
         finalQueryWithoutTagFilterBuilder =
-                new FunctionScoreQueryBuilder(query4QueryBuilder, alFilterFunction4QueryBuilder.toArray(new FilterFunctionBuilder[0]))
+                new FunctionScoreQueryBuilder(finalQueryWithoutTagFilterBuilder, alFilterFunction4QueryBuilder.toArray(new FilterFunctionBuilder[0]))
                         .boostMode(CombineFunction.MULTIPLY);
         return this;
     }
