@@ -85,8 +85,15 @@ public class PhotonQueryBuilder {
 
 
         BoolQueryBuilder nameQueryBuilder = QueryBuilders.boolQuery()
-                .should(QueryBuilders.matchQuery("housenumber", query).analyzer("standard"))
-                .should(QueryBuilders.matchQuery(String.format("name.%s.ngrams", language), query).analyzer("search_ngram"));
+                .should(QueryBuilders.matchQuery("housenumber", query).analyzer("standard"));
+
+        // XXX There is no ngram index on the the default index. Use primary language for now
+        // to make it work with the current index.
+        if ("default".equals(language)) {
+            nameQueryBuilder.should(QueryBuilders.matchQuery(String.format("name.%s.ngrams", languages.get(0)), query).analyzer("search_ngram"));
+        } else {
+            nameQueryBuilder.should(QueryBuilders.matchQuery(String.format("name.%s.ngrams", language), query).analyzer("search_ngram"));
+        }
 
         // this is former general-score, now inline
         String strCode = "double score = 1 + 6 * doc['importance'].value; score";
@@ -131,15 +138,10 @@ public class PhotonQueryBuilder {
         params.put("lon", point.getX());
         params.put("lat", point.getY());
 
-        scale = Math.abs(scale);
-        String strCode = "double dist = doc['coordinate'].planeDistance(params.lat, params.lon); " +
-                "double score = 0.1 + " + scale + " / (1.0 + dist * 0.001 / 10.0); " +
-                "score";
-        ScriptScoreFunctionBuilder builder = ScoreFunctionBuilders.scriptFunction(new Script(ScriptType.INLINE, "painless", strCode, params));
-        ArrayList<FilterFunctionBuilder> alFilterFunction4QueryBuilder = new ArrayList<>(1);
-        alFilterFunction4QueryBuilder.add(new FilterFunctionBuilder(builder));
+        FilterFunctionBuilder filterFunction = new FilterFunctionBuilder(ScoreFunctionBuilders.exponentialDecayFunction("coordinate", params, scale + "km", scale / 10 + "km", 0.8));
+
         finalQueryWithoutTagFilterBuilder =
-                new FunctionScoreQueryBuilder(finalQueryWithoutTagFilterBuilder, alFilterFunction4QueryBuilder.toArray(new FilterFunctionBuilder[0]))
+                new FunctionScoreQueryBuilder(finalQueryWithoutTagFilterBuilder, new FilterFunctionBuilder[]{filterFunction})
                         .boostMode(CombineFunction.MULTIPLY);
         return this;
     }
