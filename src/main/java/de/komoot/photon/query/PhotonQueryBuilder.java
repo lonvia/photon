@@ -53,8 +53,11 @@ public class PhotonQueryBuilder {
     private PhotonQueryBuilder(String query, String language, List<String> languages, boolean lenient) {
         BoolQueryBuilder query4QueryBuilder = QueryBuilders.boolQuery();
 
+        // First pre-filter all entries that match the terms of the query at all.
+        QueryBuilder collectorFilter;
+
         if (lenient) {
-            BoolQueryBuilder builder = QueryBuilders.boolQuery()
+            collectorFilter = QueryBuilders.boolQuery()
                     .should(QueryBuilders.matchQuery("collector.default", query)
                                 .fuzziness(Fuzziness.ONE)
                                 .prefixLength(2)
@@ -66,8 +69,6 @@ public class PhotonQueryBuilder {
                                 .analyzer("search_ngram")
                                 .minimumShouldMatch("-1"))
                     .minimumShouldMatch("1");
-
-            query4QueryBuilder.must(builder);
         } else {
             MultiMatchQueryBuilder builder =
                     QueryBuilders.multiMatchQuery(query).field("collector.default", 1.0f).type(MultiMatchQueryBuilder.Type.CROSS_FIELDS).prefixLength(2).analyzer("search_ngram").minimumShouldMatch("100%");
@@ -76,37 +77,30 @@ public class PhotonQueryBuilder {
                 builder.field(String.format("collector.%s.ngrams", lang), lang.equals(language) ? 1.0f : 0.6f);
             }
 
-            query4QueryBuilder.must(builder);
+            collectorFilter = builder;
         }
 
+        // Weigh the resulting score with the importance. The importance is usually the dominating factor here
+        // unless there is a very specific match.
+        query4QueryBuilder.must(new FunctionScoreQueryBuilder(collectorFilter, new FilterFunctionBuilder[]{
+                new FilterFunctionBuilder(ScoreFunctionBuilders.fieldValueFactorFunction("importance"))
+                }).boostMode(CombineFunction.MULTIPLY)
+            );
+
+        // Next: rerank the results for having name and address appear in the requested language
         query4QueryBuilder
-                .should(QueryBuilders.matchQuery(String.format("name.%s.raw", language), query).analyzer("search_raw"))
+                .should(QueryBuilders.matchQuery(String.format("name.%s.raw", language), query).analyzer("search_raw").boost(2))
                 .should(QueryBuilders.matchQuery(String.format("collector.%s.raw", language), query).analyzer("search_raw"));
 
 
-        BoolQueryBuilder nameQueryBuilder = QueryBuilders.boolQuery()
-                .should(QueryBuilders.matchQuery("housenumber", query).analyzer("standard"));
-
+        // Next: the name of the place must forcibly appear in the query.
         // XXX There is no ngram index on the the default index. Use primary language for now
-        // to make it work with the current index.
-        if ("default".equals(language)) {
-            nameQueryBuilder.should(QueryBuilders.matchQuery(String.format("name.%s.ngrams", languages.get(0)), query).analyzer("search_ngram"));
-        } else {
-            nameQueryBuilder.should(QueryBuilders.matchQuery(String.format("name.%s.ngrams", language), query).analyzer("search_ngram"));
-        }
+        String primaryLang =  "default".equals(language) ? languages.get(0) : language;
 
-        // this is former general-score, now inline
-        String strCode = "double score = 1 + 6 * doc['importance'].value; score";
-        ScriptScoreFunctionBuilder functionBuilder4QueryBuilder =
-                ScoreFunctionBuilders.scriptFunction(new Script(ScriptType.INLINE, "painless", strCode, new HashMap<String, Object>()));
-
-        ArrayList<FilterFunctionBuilder> alFilterFunction4QueryBuilder = new ArrayList<>(1);
-        alFilterFunction4QueryBuilder.add(new FilterFunctionBuilder(functionBuilder4QueryBuilder));
-
-        FunctionScoreQueryBuilder scoredNameQueryBuilder = new FunctionScoreQueryBuilder(nameQueryBuilder, alFilterFunction4QueryBuilder.toArray(new FilterFunctionBuilder[0]))
-                .boostMode(CombineFunction.MULTIPLY).scoreMode(ScoreMode.MAX);
-
-        query4QueryBuilder.must(scoredNameQueryBuilder.boost(2));
+        query4QueryBuilder.should(QueryBuilders.matchQuery(String.format("name.%s.ngrams", primaryLang), query)
+                .analyzer("search_ngram")
+                .minimumShouldMatch(lenient ? "80%" : "100%")
+        );
 
         finalQueryWithoutTagFilterBuilder = query4QueryBuilder;
 
