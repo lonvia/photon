@@ -138,11 +138,11 @@ public class PhotonQueryBuilder {
         params.put("lon", point.getX());
         params.put("lat", point.getY());
 
-        FilterFunctionBuilder filterFunction = new FilterFunctionBuilder(ScoreFunctionBuilders.exponentialDecayFunction("coordinate", params, scale + "km", scale / 10 + "km", 0.8));
-
         finalQueryWithoutTagFilterBuilder =
-                new FunctionScoreQueryBuilder(finalQueryWithoutTagFilterBuilder, new FilterFunctionBuilder[]{filterFunction})
-                        .boostMode(CombineFunction.MULTIPLY);
+                new FunctionScoreQueryBuilder(finalQueryWithoutTagFilterBuilder, new FilterFunctionBuilder[]{
+                        new FilterFunctionBuilder(ScoreFunctionBuilders.exponentialDecayFunction("coordinate", params, scale + "km", scale / 10 + "km", 0.8)),
+                        new FilterFunctionBuilder(ScoreFunctionBuilders.linearDecayFunction("importance", "1.0", "0.2"))
+                }).boostMode(CombineFunction.MULTIPLY).scoreMode(ScoreMode.MAX);
         return this;
     }
     
