@@ -12,6 +12,7 @@ import org.elasticsearch.index.query.functionscore.FunctionScoreQueryBuilder;
 import org.elasticsearch.index.query.functionscore.FunctionScoreQueryBuilder.FilterFunctionBuilder;
 import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilders;
 import org.elasticsearch.index.query.functionscore.ScriptScoreFunctionBuilder;
+import org.elasticsearch.index.query.functionscore.WeightBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 
@@ -90,14 +91,15 @@ public class PhotonQueryBuilder {
                     .boost(2f)
             );
         } else {
-            DisMaxQueryBuilder nameQueryBuilder = QueryBuilders.disMaxQuery();
+            BoolQueryBuilder nameQueryBuilder = QueryBuilders.boolQuery();
 
-            nameQueryBuilder.add(QueryBuilders.matchQuery(String.format("name.%s.ngrams", primaryLang), query)
+            nameQueryBuilder.should(QueryBuilders.matchQuery(String.format("name.%s.ngrams", primaryLang), query)
                     .analyzer("search_ngram")
             );
 
             // 2b) If there is no name, then there must be a housenumber.
-            nameQueryBuilder.add(QueryBuilders.matchQuery("housenumber", query).analyzer("standard").boost(5));
+            nameQueryBuilder.should(QueryBuilders.matchQuery("housenumber", query).analyzer("standard"));
+            nameQueryBuilder.minimumShouldMatch("1");
 
             query4QueryBuilder.must(nameQueryBuilder);
         }
@@ -113,10 +115,10 @@ public class PhotonQueryBuilder {
         //    Use a linear decay function instead of applying importance directly to avoid that the factor becomes
         //    0 and cancels out the name score completely.
         finalQueryWithoutTagFilterBuilder = new FunctionScoreQueryBuilder(query4QueryBuilder, new FilterFunctionBuilder[]{
-                        new FilterFunctionBuilder(ScoreFunctionBuilders.linearDecayFunction("importance", "1.0", "0.51"))
-                }).boostMode(CombineFunction.MULTIPLY);
+                        new FilterFunctionBuilder(ScoreFunctionBuilders.linearDecayFunction("importance", "1.0", "0.6")),
+                        new FilterFunctionBuilder(QueryBuilders.matchQuery("housenumber", query).analyzer("standard"), new WeightBuilder().setWeight(0.2f))
+                }).boostMode(CombineFunction.MULTIPLY).scoreMode(ScoreMode.SUM);
 
-        finalQueryWithoutTagFilterBuilder = query4QueryBuilder;
 
         // @formatter:off
         queryBuilderForTopLevelFilter = QueryBuilders.boolQuery()
