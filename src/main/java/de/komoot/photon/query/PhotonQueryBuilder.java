@@ -78,21 +78,29 @@ public class PhotonQueryBuilder {
             query4QueryBuilder.must(builder);
         }
 
-        // 2. The name of the place must forcibly appear in the query.
+
+        // 2a). The name of the place must forcibly appear in the query.
         // XXX There is no ngram index on the the default index. Use primary language for now
         String primaryLang =  "default".equals(language) ? languages.get(0) : language;
         // For short queries, the name should be the dominating factor.
         // (Unless there is a comma in the query which is a strong indicator, that this is a multi-word query.)
-        float nameBoost = 1.0f;
-        if (query.indexOf(',') < 0) {
-           int numSpaces = query.split("\\s+", 4).length;
-           nameBoost += (4 - numSpaces) * 0.5f;
-        }
+        if (query.indexOf(',') < 0 && query.indexOf(' ') < 0) {
+            query4QueryBuilder.must(QueryBuilders.matchQuery(String.format("name.%s.ngrams", primaryLang), query)
+                    .analyzer("search_ngram")
+                    .boost(2f)
+            );
+        } else {
+            DisMaxQueryBuilder nameQueryBuilder = QueryBuilders.disMaxQuery();
 
-        query4QueryBuilder.should(QueryBuilders.matchQuery(String.format("name.%s.ngrams", primaryLang), query)
-                .analyzer("search_ngram")
-                .boost(nameBoost)
-        );
+            nameQueryBuilder.add(QueryBuilders.matchQuery(String.format("name.%s.ngrams", primaryLang), query)
+                    .analyzer("search_ngram")
+            );
+
+            // 2b) If there is no name, then there must be a housenumber.
+            nameQueryBuilder.add(QueryBuilders.matchQuery("housenumber", query).analyzer("standard").boost(5));
+
+            query4QueryBuilder.must(nameQueryBuilder);
+        }
 
         // 3. Rerank the results for having name and address appear in the requested language
         query4QueryBuilder
@@ -107,6 +115,8 @@ public class PhotonQueryBuilder {
         finalQueryWithoutTagFilterBuilder = new FunctionScoreQueryBuilder(query4QueryBuilder, new FilterFunctionBuilder[]{
                         new FilterFunctionBuilder(ScoreFunctionBuilders.linearDecayFunction("importance", "1.0", "0.51"))
                 }).boostMode(CombineFunction.MULTIPLY);
+
+        finalQueryWithoutTagFilterBuilder = query4QueryBuilder;
 
         // @formatter:off
         queryBuilderForTopLevelFilter = QueryBuilders.boolQuery()
