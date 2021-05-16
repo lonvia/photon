@@ -53,11 +53,9 @@ public class PhotonQueryBuilder {
     private PhotonQueryBuilder(String query, String language, List<String> languages, boolean lenient) {
         BoolQueryBuilder query4QueryBuilder = QueryBuilders.boolQuery();
 
-        // First pre-filter all entries that match the terms of the query at all.
-        QueryBuilder collectorFilter;
-
+        // 1. All terms of the query have to be contained in the location record in some way.
         if (lenient) {
-            collectorFilter = QueryBuilders.boolQuery()
+            query4QueryBuilder.must(QueryBuilders.boolQuery()
                     .should(QueryBuilders.matchQuery("collector.default", query)
                                 .fuzziness(Fuzziness.ONE)
                                 .prefixLength(2)
@@ -68,7 +66,7 @@ public class PhotonQueryBuilder {
                                 .prefixLength(2)
                                 .analyzer("search_ngram")
                                 .minimumShouldMatch("-1"))
-                    .minimumShouldMatch("1");
+                    .minimumShouldMatch("1"));
         } else {
             MultiMatchQueryBuilder builder =
                     QueryBuilders.multiMatchQuery(query).field("collector.default", 1.0f).type(MultiMatchQueryBuilder.Type.CROSS_FIELDS).prefixLength(2).analyzer("search_ngram").minimumShouldMatch("100%");
@@ -77,32 +75,38 @@ public class PhotonQueryBuilder {
                 builder.field(String.format("collector.%s.ngrams", lang), lang.equals(language) ? 1.0f : 0.6f);
             }
 
-            collectorFilter = builder;
+            query4QueryBuilder.must(builder);
         }
 
-        // Weigh the resulting score with the importance. The importance is usually the dominating factor here
-        // unless there is a very specific match.
-        query4QueryBuilder.must(new FunctionScoreQueryBuilder(collectorFilter, new FilterFunctionBuilder[]{
-                new FilterFunctionBuilder(ScoreFunctionBuilders.fieldValueFactorFunction("importance"))
-                }).boostMode(CombineFunction.MULTIPLY)
-            );
-
-        // Next: rerank the results for having name and address appear in the requested language
-        query4QueryBuilder
-                .should(QueryBuilders.matchQuery(String.format("name.%s.raw", language), query).analyzer("search_raw").boost(2))
-                .should(QueryBuilders.matchQuery(String.format("collector.%s.raw", language), query).analyzer("search_raw"));
-
-
-        // Next: the name of the place must forcibly appear in the query.
+        // 2. The name of the place must forcibly appear in the query.
         // XXX There is no ngram index on the the default index. Use primary language for now
         String primaryLang =  "default".equals(language) ? languages.get(0) : language;
+        // For short queries, the name should be the dominating factor.
+        // (Unless there is a comma in the query which is a strong indicator, that this is a multi-word query.)
+        float nameBoost = 1.0f;
+        if (query.indexOf(',') < 0) {
+           int numSpaces = query.split("\\s+", 4).length;
+           nameBoost += (4 - numSpaces) * 0.5f;
+        }
 
         query4QueryBuilder.should(QueryBuilders.matchQuery(String.format("name.%s.ngrams", primaryLang), query)
                 .analyzer("search_ngram")
-                .minimumShouldMatch(lenient ? "80%" : "100%")
+                .boost(nameBoost)
         );
 
-        finalQueryWithoutTagFilterBuilder = query4QueryBuilder;
+        // 3. Rerank the results for having name and address appear in the requested language
+        query4QueryBuilder
+                .should(QueryBuilders.matchQuery(String.format("name.%s.raw", language), query).analyzer("search_raw").operator(Operator.OR).boost(0.7f))
+                .should(QueryBuilders.matchQuery(String.format("collector.%s.raw", language), query).analyzer("search_raw").boost(0.3f));
+
+
+        // 4. Weigh the resulting score with the importance. The importance is usually the dominating factor here
+        //    unless there is a very specific match.
+        //    Use a linear decay function instead of applying importance directly to avoid that the factor becomes
+        //    0 and cancels out the name score completely.
+        finalQueryWithoutTagFilterBuilder = new FunctionScoreQueryBuilder(query4QueryBuilder, new FilterFunctionBuilder[]{
+                        new FilterFunctionBuilder(ScoreFunctionBuilders.linearDecayFunction("importance", "1.0", "0.51"))
+                }).boostMode(CombineFunction.MULTIPLY);
 
         // @formatter:off
         queryBuilderForTopLevelFilter = QueryBuilders.boolQuery()
