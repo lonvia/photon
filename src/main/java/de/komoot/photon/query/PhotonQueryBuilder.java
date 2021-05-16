@@ -80,9 +80,20 @@ public class PhotonQueryBuilder {
             collectorQuery = builder;
         }
 
-        query4QueryBuilder.must(QueryBuilders.functionScoreQuery(collectorQuery, new FilterFunctionBuilder[]{
-                new FilterFunctionBuilder(QueryBuilders.matchQuery("housenumber", query).analyzer("standard"), new WeightBuilder().setWeight(3f))
+        query4QueryBuilder.must(collectorQuery);
+
+
+        MultiMatchQueryBuilder hnrBuilder =
+                QueryBuilders.multiMatchQuery(query).field("collector.default.raw", 1.0f).type(MultiMatchQueryBuilder.Type.CROSS_FIELDS).analyzer("search_raw");
+
+        for (String lang : languages) {
+            hnrBuilder.field(String.format("collector.%s.raw", lang), lang.equals(language) ? 1.0f : 0.6f);
+        }
+
+        query4QueryBuilder.should(QueryBuilders.functionScoreQuery(hnrBuilder.boost(0.3f), new FilterFunctionBuilder[]{
+                new FilterFunctionBuilder(QueryBuilders.matchQuery("housenumber", query).analyzer("standard"), new WeightBuilder().setWeight(10f))
         }));
+
 
 
         // 2a). The name of the place must forcibly appear in the query.
@@ -111,8 +122,7 @@ public class PhotonQueryBuilder {
 
         // 3. Rerank the results for having name and address appear in the requested language
         query4QueryBuilder
-                .should(QueryBuilders.matchQuery(String.format("name.%s.raw", language), query).analyzer("search_raw").operator(Operator.OR).boost(0.7f))
-                .should(QueryBuilders.matchQuery(String.format("collector.%s.raw", language), query).analyzer("search_raw").boost(0.3f));
+                .should(QueryBuilders.matchQuery(String.format("name.%s.raw", language), query).analyzer("search_raw").operator(Operator.OR).boost(0.7f));
 
 
         // 4. Weigh the resulting score with the importance. The importance is usually the dominating factor here
