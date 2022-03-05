@@ -62,7 +62,7 @@ public class CommandLineArgs {
     private String password = null;
 
     @Parameter(names = "-data-dir", description = "Photon data directory")
-    private String dataDirectory = new File(".").getAbsolutePath();
+    private String dataDirectory = new File("photon_data").getAbsolutePath();
 
     @Parameter(names = "-listen-port", description = "Port for the Photon server to listen to")
     private int listenPort = 2322;

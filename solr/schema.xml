@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<schema name="photon" version="1.1">
+  <!-- Field type definitions -->
+
+  <fieldType name="string" class="solr.StrField" stored="true" indexed="false" />
+  <fieldType name="name" class="solr.TextField" multiValued="true" stored="true" indexed="false" />
+  <fieldType name="point" class="solr.LatLonPointSpatialField" stored="true" />
+  <fieldType name="bbox" class="solr.DoublePointField" multiValued="true" stored="true" indexed="false" />
+  <fieldType name="score" class="solr.DoublePointField" stored="true"  indexed="false"/>
+  <fieldType name="long" class="solr.LongPointField" stored="true"  indexed="false"/>
+
+  <!-- language-agnostic collector fields -->
+  <fieldType name="token_collector" class="solr.TextField" multiValued="true" indexed="true" stored="true">
+    <analyzer type="index">
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.ICUFoldingFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.ICUFoldingFilterFactory"/>
+    </analyzer>
+  </fieldType>
+  <fieldType name="ngram_collector" class="solr.TextField" multiValued="true" indexed="true" stored="true">
+    <analyzer type="index">
+      <tokenizer class="solr.NGramTokenizerFactory" minGramSize="2" maxGramSize="20"/>
+      <filter class="solr.ICUFoldingFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.StandardTokenizerFactory" />
+      <filter class="solr.ICUFoldingFilterFactory"/>
+    </analyzer>
+  </fieldType>
+
+
+  <!-- Field mappings -->
+  <field name="id" type="string" indexed="true" />
+  <uniqueKey>id</uniqueKey>
+  <field name="osm_type" type="string" />
+  <field name="osm_id" type="long" />
+  <field name="osm_key" type="string" indexed="true" />
+  <field name="osm_value" type="string" indexed="true" />
+  <field name="object_type" type="string" />
+
+  <field name="name.default" type="name" />
+  <field name="name.alt" type="name" stored="false"/>
+  <dynamicField name="name.*" type="name" />
+
+  <field name="housenumber" type="name" />
+
+  <field name="importance" type="score" />
+  <field name="classification" type="string" />
+
+  <!-- Geometries -->
+  <field name="coordinate" type="point" indexed="true" />
+  <field name="extent" type="bbox" />
+
+
+  <!-- Address fields -->
+  <field name="street.default" type="name" />
+  <dynamicField name="street.*" type="name" />
+
+  <field name="locality.default" type="name"  />
+  <dynamicField name="locality.*" type="name" />
+
+  <field name="district.default" type="name" />
+  <dynamicField name="district.*" type="name" />
+
+  <field name="city.default" type="name"  />
+  <dynamicField name="city.*" type="name" />
+
+  <field name="county.default" type="name" />
+  <dynamicField name="county.*" type="name" />
+
+  <field name="state.default" type="name" />
+  <dynamicField name="state.*" type="name" />
+
+  <field name="country.default" type="name" />
+  <dynamicField name="country.*" type="name" />
+
+  <field name="countrycode" type="string" indexed="false" stored="true" />
+
+  <field name="context.default" type="name" />
+  <dynamicField name="context.*" type="name" />
+
+  <field name="postcode" type="string" />
+
+  <!-- Collector fields for initial filter query -->
+  <field name="collector.all.tokens" type="token_collector"/>
+  <copyField source="name.*" dest="collector.all.tokens" />
+  <copyField source="housenumber" dest="collector.all.tokens" />
+  <copyField source="street.*" dest="collector.all.tokens" />
+  <copyField source="locality.*" dest="collector.all.tokens" />
+  <copyField source="district.*" dest="collector.all.tokens" />
+  <copyField source="city.*" dest="collector.all.tokens" />
+  <copyField source="county.*" dest="collector.all.tokens" />
+  <copyField source="state.*" dest="collector.all.tokens" />
+  <copyField source="country.*" dest="collector.all.tokens" />
+  <copyField source="context.*" dest="collector.all.tokens" />
+  <copyField source="postcode" dest="collector.all.tokens" />
+  <copyField source="classification" dest="collector.all.tokens" />
+
+  <field name="collector.all.ngram" type="ngram_collector"/>
+  <copyField source="name.*" dest="collector.all.ngram" />
+  <copyField source="housenumber" dest="collector.all.ngram" />
+  <copyField source="street.*" dest="collector.all.ngram" />
+  <copyField source="locality.*" dest="collector.all.ngram" />
+  <copyField source="district.*" dest="collector.all.ngram" />
+  <copyField source="city.*" dest="collector.all.ngram" />
+  <copyField source="county.*" dest="collector.all.ngram" />
+  <copyField source="state.*" dest="collector.all.ngram" />
+  <copyField source="country.*" dest="collector.all.ngram" />
+  <copyField source="context.*" dest="collector.all.ngram" />
+  <copyField source="postcode" dest="collector.all.ngram" />
+
+  <field name="collector.name.ngram" type="ngram_collector" />
+  <copyField source="name.*" dest="collector.name.ngram" />
+  <copyField source="housenumber" dest="collector.name.ngram" />
+  <copyField source="classification" dest="collector.name.ngram" />
+
+  <!-- Catch-all extratags -->
+  <dynamicField name="extra.*" type="string" indexed="false" stored="true"/>
+</schema>

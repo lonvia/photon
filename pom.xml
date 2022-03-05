@@ -5,7 +5,7 @@
 
     <groupId>de.komoot.photon</groupId>
     <artifactId>photon</artifactId>
-    <version>0.5.0</version>
+    <version>2.0.0</version>
 
     <dependencies>
         <dependency>
@@ -152,14 +152,6 @@
                                 <exclude>META-INF/*.SF</exclude>
                                 <exclude>META-INF/*.DSA</exclude>
                                 <exclude>META-INF/*.RSA</exclude>
-                                <!--
-                                    This mitigates against the log4j JNDI lookup vulnerability: https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-44228
-
-                                    Since we are using an old version of elastic search that is incompatible with a patched, newer version of log4j we
-                                    have to remove the class JndiLookup from the fat jar. This is the recommended course of action when you cannot upgrade
-                                    as per https://logging.apache.org/log4j/2.x/security.html
-                                -->
-                                <exclude>org/apache/logging/log4j/core/lookup/JndiLookup.class</exclude>
                             </excludes>
                         </filter>
                     </filters>
@@ -187,6 +179,13 @@
                         </configuration>
                     </execution>
                 </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>io.github.edwgiz</groupId>
+                        <artifactId>log4j-maven-shade-plugin-extensions</artifactId>
+                        <version>${log4j.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -258,7 +257,7 @@
 
         <solr.version>8.11.1</solr.version>
         <slf4j.version>1.7.36</slf4j.version>
-        <log4j.version>2.17.2</log4j.version>
+        <log4j.version>2.17.1</log4j.version>
 
         <additionalparam>-Xdoclint:none</additionalparam>
     </properties>
