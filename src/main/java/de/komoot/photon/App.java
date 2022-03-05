@@ -27,11 +27,6 @@ public class App {
     public static void main(String[] rawArgs) throws Exception {
         CommandLineArgs args = parseCommandLine(rawArgs);
 
-        if (args.getJsonDump() != null) {
-            startJsonDump(args);
-            return;
-        }
-
         if (args.getNominatimUpdateInit() != null) {
             startNominatimUpdateInit(args);
             return;
@@ -92,23 +87,6 @@ public class App {
         }
 
         return args;
-    }
-
-
-    /**
-     * Take nominatim data and dump it to a Json file.
-     */
-    private static void startJsonDump(CommandLineArgs args) {
-        try {
-            final String filename = args.getJsonDump();
-            final JsonDumper jsonDumper = new JsonDumper(filename, args.getLanguages(), args.getExtraTags());
-            NominatimConnector nominatimConnector = new NominatimConnector(args.getHost(), args.getPort(), args.getDatabase(), args.getUser(), args.getPassword());
-            nominatimConnector.setImporter(jsonDumper);
-            nominatimConnector.readEntireDatabase(args.getCountryCodes());
-            LOGGER.info("Json dump was created: {}", filename);
-        } catch (FileNotFoundException e) {
-            LOGGER.error("Cannot create dump", e);
-        }
     }
 
 
