@@ -1,7 +1,6 @@
 package de.komoot.photon.searcher;
 
 import de.komoot.photon.Constants;
-import de.komoot.photon.Utils;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -37,7 +36,7 @@ public class StreetDupesRemover {
                     }
 
                     if (language.equals("nl")) {
-                        final String onlyDigitsPostcode = Utils.stripNonDigits(postcode);
+                        final String onlyDigitsPostcode = postcode.replaceAll("\\D", "");
                         key += ":" + onlyDigitsPostcode + ":" + name;
                     } else {
                         key += ":" + postcode + ":" + name;
