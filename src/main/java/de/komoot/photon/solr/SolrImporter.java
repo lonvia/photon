@@ -98,11 +98,11 @@ public class SolrImporter implements Importer {
         final Map<String, String> name = doc.getName();
         builder.addNoneNull("name.default", name.get("name"))
                 .addNoneNull("name.alt", name.get("alt_name"))
-                .addNoneNull("name.alt", name.get("int_name"))
-                .addNoneNull("name.alt", name.get("loc_name"))
-                .addNoneNull("name.alt", name.get("old_name"))
-                .addNoneNull("name.alt", name.get("reg_name"))
-                .addNoneNull("name.alt", name.get("addr:housename"));
+                .addNoneNull("name.int", name.get("int_name"))
+                .addNoneNull("name.loc", name.get("loc_name"))
+                .addNoneNull("name.old", name.get("old_name"))
+                .addNoneNull("name.reg", name.get("reg_name"))
+                .addNoneNull("name.housename", name.get("addr:housename"));
 
         for (String lang: languages) {
             builder.addNoneNull("name." + lang, name.get("name:" + lang));

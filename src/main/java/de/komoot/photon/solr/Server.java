@@ -80,7 +80,7 @@ public class Server {
 
         copyResourceToFile("solr.xml", dataDirectory.resolve("solr.xml"));
 
-        coreDirectory.toFile().mkdirs();
+        coreDirectory.resolve("conf").toFile().mkdirs();
         copyResourceToFile("photon_core.properties", coreDirectory.resolve("core.properties"));
         copyResourceToFile("photon_solrconfig.xml", coreDirectory.resolve("solrconfig.xml"));
         copyResourceToFile("schema.xml", coreDirectory.resolve("schema.xml"));
@@ -117,7 +117,7 @@ public class Server {
     }
 
     public SearchHandler createSearchHandler(String[] languages) {
-        return new SolrSearchHandler();
+        return new SolrSearchHandler(getSolrClient());
     }
 
     public ReverseHandler createReverseHandler() {

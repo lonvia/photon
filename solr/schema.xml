@@ -43,7 +43,6 @@
   <field name="object_type" type="string" />
 
   <field name="name.default" type="name" />
-  <field name="name.alt" type="name" stored="false"/>
   <dynamicField name="name.*" type="name" />
 
   <field name="housenumber" type="name" />
