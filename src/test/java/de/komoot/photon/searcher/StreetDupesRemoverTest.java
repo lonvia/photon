@@ -1,6 +1,6 @@
 package de.komoot.photon.searcher;
 
-import de.komoot.photon.Constants;
+import de.komoot.photon.DBSchemaField;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -35,10 +35,10 @@ public class StreetDupesRemoverTest {
     private PhotonResult createDummyResult(String postCode, String name, String osmKey,
                     String osmValue) {
         return new MockPhotonResult()
-                .put(Constants.POSTCODE, postCode)
-                .putLocalized(Constants.NAME, "en", name)
-                .put(Constants.OSM_KEY, osmKey)
-                .put(Constants.OSM_VALUE, osmValue);
+                .put(DBSchemaField.POSTCODE, postCode)
+                .putLocalized(DBSchemaField.NAME, "en", name)
+                .put(DBSchemaField.OSM_KEY, osmKey)
+                .put(DBSchemaField.OSM_VALUE, osmValue);
     }
 
 }

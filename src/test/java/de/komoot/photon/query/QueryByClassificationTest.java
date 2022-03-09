@@ -81,7 +81,7 @@ public class QueryByClassificationTest extends ESBaseTester {
         assertNotNull(class_term);
 
         PhotonResult response = getById(testDocId);
-        String classification = (String) response.get(Constants.CLASSIFICATION);
+        String classification = (String) response.get(DBSchemaField.CLASSIFICATION);
         assertEquals(classification, class_term);
 
         List<PhotonResult> result = search(class_term + " curli");

@@ -1,6 +1,6 @@
 package de.komoot.photon.elasticsearch;
 
-import de.komoot.photon.Constants;
+import de.komoot.photon.DBSchemaField;
 import de.komoot.photon.searcher.PhotonResult;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.search.SearchHit;
@@ -50,15 +50,15 @@ public class ElasticResult implements PhotonResult {
 
     @Override
     public double[] getCoordinates() {
-        final Map<String, Double> coordinate = (Map<String, Double>) result.getSource().get("coordinate");
+        final Map<String, Double> coordinate = (Map<String, Double>) result.getSource().get(DBSchemaField.COORDINATE);
         if (coordinate == null) {
             log.error(String.format("invalid data [id=%s, type=%s], coordinate is missing!",
-                    result.getSource().get(Constants.OSM_ID),
-                    result.getSource().get(Constants.OSM_VALUE)));
+                    result.getSource().get(DBSchemaField.OSM_ID),
+                    result.getSource().get(DBSchemaField.OSM_TYPE)));
             return INVALID_COORDINATES;
         }
 
-        return new double[]{coordinate.get(Constants.LON), coordinate.get(Constants.LAT)};
+        return new double[]{coordinate.get("lon"), coordinate.get("lat")};
     }
 
     @Override

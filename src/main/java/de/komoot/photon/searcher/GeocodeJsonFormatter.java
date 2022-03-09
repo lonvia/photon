@@ -1,6 +1,6 @@
 package de.komoot.photon.searcher;
 
-import de.komoot.photon.Constants;
+import de.komoot.photon.DBSchemaField;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -10,9 +10,8 @@ import java.util.List;
  * Format a database result into a Photon GeocodeJson response.
  */
 public class GeocodeJsonFormatter implements ResultFormatter {
-    private static final String[] KEYS_LANG_UNSPEC = {Constants.OSM_TYPE, Constants.OSM_ID, Constants.OSM_KEY, Constants.OSM_VALUE, Constants.OBJECT_TYPE, Constants.POSTCODE, Constants.HOUSENUMBER, Constants.COUNTRYCODE};
-    private static final String[] KEYS_LANG_SPEC = {Constants.NAME, Constants.COUNTRY, Constants.CITY, Constants.DISTRICT, Constants.LOCALITY, Constants.STREET, Constants.STATE, Constants.COUNTY};
-    private static final String[] NAME_PRECEDENCE = {"default", "housename", "int", "loc", "reg", "alt", "old"};
+    private static final String[] KEYS_LANG_UNSPEC = {DBSchemaField.OSM_TYPE, DBSchemaField.OSM_ID, DBSchemaField.OSM_KEY, DBSchemaField.OSM_VALUE, DBSchemaField.OBJECT_TYPE, DBSchemaField.POSTCODE, DBSchemaField.HOUSENUMBER, DBSchemaField.COUNTRYCODE};
+    private static final String[] KEYS_LANG_SPEC = {DBSchemaField.NAME, DBSchemaField.COUNTRY, DBSchemaField.CITY, DBSchemaField.DISTRICT, DBSchemaField.LOCALITY, DBSchemaField.STREET, DBSchemaField.STATE, DBSchemaField.COUNTY};
 
     private final boolean addDebugInfo;
     private final String language;
@@ -56,7 +55,7 @@ public class GeocodeJsonFormatter implements ResultFormatter {
         JSONObject props = new JSONObject();
         if (addDebugInfo) {
             props.put("score", result.getScore());
-            put(props,"importance", result.get("importance"));
+            put(props,"importance", result.get(DBSchemaField.IMPORTANCE));
         }
 
         for (String key : KEYS_LANG_UNSPEC) {
@@ -72,7 +71,7 @@ public class GeocodeJsonFormatter implements ResultFormatter {
             props.put("extent", extent);
         }
 
-        put(props, "extra", result.getMap("extra"));
+        put(props, "extra", result.getMap(DBSchemaField.EXTRA));
 
         return props;
     }

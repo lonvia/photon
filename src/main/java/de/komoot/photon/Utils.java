@@ -17,31 +17,31 @@ public class Utils {
     public static XContentBuilder convert(PhotonDoc doc, String[] languages, String[] extraTags) throws IOException {
         final AddressType atype = doc.getAddressType();
         XContentBuilder builder = XContentFactory.jsonBuilder().startObject()
-                .field(Constants.OSM_ID, doc.getOsmId())
-                .field(Constants.OSM_TYPE, doc.getOsmType())
-                .field(Constants.OSM_KEY, doc.getTagKey())
-                .field(Constants.OSM_VALUE, doc.getTagValue())
-                .field(Constants.OBJECT_TYPE, atype == null ? "locality" : atype.getName())
-                .field(Constants.IMPORTANCE, doc.getImportance());
+                .field(DBSchemaField.OSM_ID, doc.getOsmId())
+                .field(DBSchemaField.OSM_TYPE, doc.getOsmType())
+                .field(DBSchemaField.OSM_KEY, doc.getTagKey())
+                .field(DBSchemaField.OSM_VALUE, doc.getTagValue())
+                .field(DBSchemaField.OBJECT_TYPE, atype == null ? "locality" : atype.getName())
+                .field(DBSchemaField.IMPORTANCE, doc.getImportance());
 
         String classification = buildClassificationString(doc.getTagKey(), doc.getTagValue());
         if (classification != null) {
-            builder.field(Constants.CLASSIFICATION, classification);
+            builder.field(DBSchemaField.CLASSIFICATION, classification);
         }
 
         if (doc.getCentroid() != null) {
-            builder.startObject("coordinate")
+            builder.startObject(DBSchemaField.COORDINATE)
                     .field("lat", doc.getCentroid().getY())
                     .field("lon", doc.getCentroid().getX())
                     .endObject();
         }
 
         if (doc.getHouseNumber() != null) {
-            builder.field("housenumber", doc.getHouseNumber());
+            builder.field(DBSchemaField.HOUSENUMBER, doc.getHouseNumber());
         }
 
         if (doc.getPostcode() != null) {
-            builder.field("postcode", doc.getPostcode());
+            builder.field(DBSchemaField.POSTCODE, doc.getPostcode());
         }
 
         writeName(builder, doc.getName(), languages);
@@ -50,7 +50,7 @@ public class Utils {
         }
         String countryCode = doc.getCountryCode();
         if (countryCode != null)
-            builder.field(Constants.COUNTRYCODE, countryCode);
+            builder.field(DBSchemaField.COUNTRYCODE, countryCode);
         writeContext(builder, doc.getContext(), languages);
         writeExtraTags(builder, doc.getExtratags(), extraTags);
         writeExtent(builder, doc.getBbox());
@@ -86,7 +86,7 @@ public class Utils {
         if (bbox.getArea() == 0.) return;
 
         // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/mapping-geo-shape-type.html#_envelope
-        builder.startObject("extent");
+        builder.startObject(DBSchemaField.EXTENT);
         builder.field("type", "envelope");
 
         builder.startArray("coordinates");
@@ -147,7 +147,7 @@ public class Utils {
         }
 
         if (!multimap.isEmpty()) {
-            builder.startObject("context");
+            builder.startObject(DBSchemaField.CONTEXT);
             for (Map.Entry<String, Set<String>> entry : multimap.entrySet()) {
                 builder.field(entry.getKey(), String.join(", ", entry.getValue()));
             }

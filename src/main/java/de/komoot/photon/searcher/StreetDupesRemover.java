@@ -1,6 +1,6 @@
 package de.komoot.photon.searcher;
 
-import de.komoot.photon.Constants;
+import de.komoot.photon.DBSchemaField;
 import de.komoot.photon.Utils;
 
 import java.util.ArrayList;
@@ -22,16 +22,16 @@ public class StreetDupesRemover {
         final HashSet<String> keys = new HashSet<>();
 
         for (PhotonResult result : results) {
-            if ("highway".equals(result.get(Constants.OSM_KEY))) {
+            if ("highway".equals(result.get(DBSchemaField.OSM_KEY))) {
                 // result is a street
-                final String postcode = (String) result.get(Constants.POSTCODE);
-                final String name = result.getLocalised(Constants.NAME, language);
+                final String postcode = (String) result.get(DBSchemaField.POSTCODE);
+                final String name = result.getLocalised(DBSchemaField.NAME, language);
 
                 if (postcode != null && name != null) {
                     // street has a postcode and name
 
                     // OSM_VALUE is part of key to avoid deduplication of e.g. bus_stops and streets with same name
-                    String key = (String) result.get(Constants.OSM_VALUE);
+                    String key = (String) result.get(DBSchemaField.OSM_VALUE);
                     if (key == null) {
                         key = "";
                     }

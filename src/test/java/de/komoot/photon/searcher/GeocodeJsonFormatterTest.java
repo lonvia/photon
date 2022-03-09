@@ -1,6 +1,6 @@
 package de.komoot.photon.searcher;
 
-import de.komoot.photon.Constants;
+import de.komoot.photon.DBSchemaField;
 import org.json.JSONObject;
 import org.json.JSONArray;
 import org.junit.jupiter.api.Test;
@@ -28,18 +28,18 @@ public class GeocodeJsonFormatterTest {
             JSONObject feature = features.getJSONObject(i);
             assertEquals("Feature", feature.getString("type"));
             assertEquals("Point", feature.getJSONObject("geometry").getString("type"));
-            assertEquals("leisure", feature.getJSONObject("properties").getString(Constants.OSM_KEY));
-            assertEquals("park", feature.getJSONObject("properties").getString(Constants.OSM_VALUE));
+            assertEquals("leisure", feature.getJSONObject("properties").getString("osm_key"));
+            assertEquals("park", feature.getJSONObject("properties").getString("osm_value"));
         }
     }
     
     private PhotonResult createDummyResult(String postCode, String name, String osmKey,
                     String osmValue) {
         return new MockPhotonResult()
-                .put(Constants.POSTCODE, postCode)
-                .putLocalized(Constants.NAME, "en", name)
-                .put(Constants.OSM_KEY, osmKey)
-                .put(Constants.OSM_VALUE, osmValue);
+                .put(DBSchemaField.POSTCODE, postCode)
+                .putLocalized(DBSchemaField.NAME, "en", name)
+                .put(DBSchemaField.OSM_KEY, osmKey)
+                .put(DBSchemaField.OSM_VALUE, osmValue);
     }
 
 }
