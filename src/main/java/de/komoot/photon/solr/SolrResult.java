@@ -2,6 +2,9 @@ package de.komoot.photon.solr;
 
 import de.komoot.photon.searcher.PhotonResult;
 import org.apache.solr.common.SolrDocument;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
 
 import java.util.*;
 
@@ -46,38 +49,46 @@ public class SolrResult implements PhotonResult {
         Map<String, String> result = new HashMap<>();
 
         for (Map.Entry<String,Object> entry : document) {
-            if (entry.getKey().startsWith(key + ".") && (entry.getValue() instanceof String)) {
-                result.put(entry.getKey().substring(key.length() + 1), (String) entry.getValue());
-            }
-        }
+            if (entry.getKey().startsWith(key + ".")) {
+                Object value = entry.getValue();
 
-        return result;
-    }
+                if (value instanceof Collection) {
+                    value = ((Collection<?>) value).iterator().next();
+                }
 
-    @Override
-    public double[] getCoordinates() {
-        // Looks like coordinates come back as a string "lat,lon". So let's parse them back into numbers.
-        String value = getAsString("cooordinate");
-
-        if (value != null) {
-            String[] parts = value.split(",");
-            if (parts.length == 2) {
-                try {
-                    return new double[]{Double.parseDouble(parts[1]), Double.parseDouble(parts[0])};
-                } catch (NumberFormatException e) {
-                    // fallthrough
+                if (value instanceof String) {
+                    result.put(entry.getKey().substring(key.length() + 1), (String) value);
                 }
             }
         }
 
-        return new double[]{180, 90};
+        return result.isEmpty() ? null : result;
+    }
+
+    @Override
+    public double[] getCoordinates() {
+        // Coordinate come back as WKT
+        String value = getAsString("coordinate");
+
+        if (value == null) {
+            return INVALID_COORDINATES;
+        }
+
+        try {
+            Coordinate coordinate = new WKTReader().read(value).getCoordinate();
+            return new double[]{coordinate.getX(), coordinate.getY()};
+        } catch (ParseException e) {
+            // fallthrough
+        }
+
+        return INVALID_COORDINATES;
     }
 
     @Override
     public double[] getExtent() {
         Collection<Object> coords = document.getFieldValues("extent");
 
-        if (coords.size() != 4) {
+        if (coords == null || coords.size() != 4) {
             return null;
         }
 
@@ -102,6 +113,11 @@ public class SolrResult implements PhotonResult {
 
     private String getAsString(String key) {
         Object result = document.get(key);
+
+        if (result instanceof Collection) {
+            result = ((Collection) result).iterator().next();
+        }
+
         return (result instanceof String) ? (String) result : null;
     }
 }

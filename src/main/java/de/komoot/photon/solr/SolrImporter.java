@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
+import org.locationtech.jts.geom.Point;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -77,14 +78,15 @@ public class SolrImporter implements Importer {
                 .addNoneNull("postcode", doc.getPostcode());
 
         if (doc.getCentroid() != null) {
-            builder.add("coordinate", doc.getCentroid().toString());
+            Point pt = doc.getCentroid();
+            builder.add("coordinate", pt.toString());
         }
 
         if (doc.getBbox() != null) {
             builder.add("extent", doc.getBbox().getMinX());
-            builder.add("extent", doc.getBbox().getMinY());
-            builder.add("extent", doc.getBbox().getMaxX());
             builder.add("extent", doc.getBbox().getMaxY());
+            builder.add("extent", doc.getBbox().getMaxX());
+            builder.add("extent", doc.getBbox().getMinY());
         }
 
 
