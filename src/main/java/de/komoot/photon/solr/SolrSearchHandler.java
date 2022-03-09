@@ -49,7 +49,7 @@ public class SolrSearchHandler implements SearchHandler {
 
     @Override
     public String dumpQuery(PhotonRequest photonRequest) {
-        return null;
+        return buildQuery(photonRequest).toString();
     }
 
     private SolrQuery buildQuery(PhotonRequest request) {
@@ -63,7 +63,7 @@ public class SolrSearchHandler implements SearchHandler {
             solrTerm.append("collector.name.ngram:");
             solrTerm.append(inquery);
         } else {
-            solrTerm.append("collector.all.tokens:(");
+            solrTerm.append("collector.all.ngram:(");
             solrTerm.append(inquery.substring(0, lastSpace).replaceAll(" ", " && "));
             solrTerm.append(") AND collector.all.ngram:");
             solrTerm.append(inquery, lastSpace + 1, inquery.length());

@@ -1,0 +1,29 @@
+package de.komoot.photon.solr;
+
+import de.komoot.photon.searcher.PhotonResult;
+import org.apache.solr.client.solrj.SolrServerException;
+
+import java.io.IOException;
+
+public class SolrTestServer extends Server {
+
+    public SolrTestServer(String mainDirectory) {
+        super(mainDirectory);
+    }
+
+    public PhotonResult getById(int id) {
+        try {
+            return new SolrResult(getSolrClient().getById(Integer.toString(id)));
+        } catch (SolrServerException e) {
+            // fallthrough
+        } catch (IOException e) {
+            // fallthrough
+        }
+
+        return null;
+    }
+
+    public void refresh() {
+        // nothing
+    }
+}

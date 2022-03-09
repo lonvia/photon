@@ -183,11 +183,8 @@ public class Utils {
         return filteredNames;
     }
 
-    public static String buildClassificationString(String key, String value) {
-        if ("place".equals(key) || "building".equals(key)) {
-            return null;
-        }
 
+    public static String buildClassificationString(String key, String value) {
         if ("highway".equals(key)
             && ("unclassified".equals(value) || "residential".equals(value))) {
             return null;

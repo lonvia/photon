@@ -1,10 +1,10 @@
 package de.komoot.photon;
 
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.Point;
-import com.vividsolutions.jts.geom.PrecisionModel;
-import de.komoot.photon.elasticsearch.ElasticTestServer;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.PrecisionModel;
+import de.komoot.photon.solr.SolrTestServer;
 import de.komoot.photon.searcher.PhotonResult;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.io.TempDir;
@@ -24,7 +24,7 @@ public class ESBaseTester {
     public static final String TEST_CLUSTER_NAME = "photon-test";
     protected static GeometryFactory FACTORY = new GeometryFactory(new PrecisionModel(), 4326);
 
-    private ElasticTestServer server;
+    private SolrTestServer server;
 
     protected PhotonDoc createDoc(double lon, double lat, int id, int osmId, String key, String value) {
         Point location = FACTORY.createPoint(new Coordinate(lon, lat));
@@ -54,7 +54,7 @@ public class ESBaseTester {
      * @throws IOException
      */
     public void setUpES(Path test_directory, String... languages) throws IOException {
-        server = new ElasticTestServer(test_directory.toString());
+        server = new SolrTestServer(test_directory.resolve("photon_test_data").toString());
         server.start(TEST_CLUSTER_NAME, new String[]{});
         server.recreateIndex(languages, new Date());
         refresh();
@@ -80,7 +80,7 @@ public class ESBaseTester {
         return server.createUpdater(new String[]{"en"}, extraTags);
     }
 
-    protected ElasticTestServer getServer() {
+    protected SolrTestServer getServer() {
         if (server == null) {
             throw new RuntimeException("call setUpES before using getClient");
         }

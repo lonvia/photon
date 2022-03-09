@@ -1,6 +1,7 @@
 package de.komoot.photon.query;
 
 import de.komoot.photon.*;
+import de.komoot.photon.searcher.ClassificationString;
 import de.komoot.photon.searcher.PhotonResult;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -74,7 +75,7 @@ class QueryByClassificationTest extends ESBaseTester {
         instance.finish();
         refresh();
 
-        String class_term = Utils.buildClassificationString("amenity", "restaurant");
+        String class_term = ClassificationString.build("amenity", "restaurant");
 
         assertNotNull(class_term);
 

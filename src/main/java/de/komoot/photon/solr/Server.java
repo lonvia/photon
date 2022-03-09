@@ -11,6 +11,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -39,7 +40,7 @@ public class Server {
     private String coreName;
     private String[] transportAddresses;
 
-    private SolrClient client;
+    private SolrClient client = null;
 
     public Server(String mainDirectory) {
         dataDirectory = Paths.get(mainDirectory).toAbsolutePath();
@@ -59,12 +60,9 @@ public class Server {
     public void shutdown() {
         if (client != null) {
             try {
-                client.commit();
                 client.close();
-            } catch (SolrServerException e) {
-                log.warn("Error while closing client: " + e.getMessage());
             } catch (IOException e) {
-                log.warn("Error while closing client: " + e.getMessage());
+                log.error("Closing failed: ", e);
             }
         }
     }
@@ -81,9 +79,15 @@ public class Server {
         copyResourceToFile("solr.xml", dataDirectory.resolve("solr.xml"));
 
         coreDirectory.resolve("conf").toFile().mkdirs();
-        copyResourceToFile("photon_core.properties", coreDirectory.resolve("core.properties"));
+
+        FileWriter propertyWriter = new FileWriter(coreDirectory.resolve("core.properties").toFile());
+        propertyWriter.write("name=" + coreName + "\n");
+        propertyWriter.close();
+
         copyResourceToFile("photon_solrconfig.xml", coreDirectory.resolve("solrconfig.xml"));
         copyResourceToFile("schema.xml", coreDirectory.resolve("schema.xml"));
+
+
 
         DatabaseProperties dbProperties = new DatabaseProperties().setLanguages(languages);
         saveToDatabase(dbProperties);
@@ -93,11 +97,6 @@ public class Server {
 
     public void updateIndexSettings(String synonymFile) throws IOException {
         // TODO: that will be fun
-    }
-
-    public Server setMaxShards(Integer shards) {
-        // nothing, we don't care about shards
-        return this;
     }
 
     public void saveToDatabase(DatabaseProperties dbProperties) throws IOException  {
@@ -129,7 +128,11 @@ public class Server {
         Files.copy(is, output);
     }
 
-    private SolrClient getSolrClient() {
-        return new EmbeddedSolrServer(dataDirectory, coreName);
+    protected SolrClient getSolrClient() {
+        if (client == null) {
+            client = new EmbeddedSolrServer(dataDirectory, coreName);
+        }
+
+        return client;
     }
 }

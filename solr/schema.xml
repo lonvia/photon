@@ -23,8 +23,9 @@
   </fieldType>
   <fieldType name="ngram_collector" class="solr.TextField" multiValued="true" indexed="true" stored="true">
     <analyzer type="index">
-      <tokenizer class="solr.NGramTokenizerFactory" minGramSize="2" maxGramSize="20"/>
+      <tokenizer class="solr.StandardTokenizerFactory" />
       <filter class="solr.ICUFoldingFilterFactory"/>
+      <filter class="solr.EdgeNGramFilterFactory" minGramSize="2" maxGramSize="20" preserveOriginal="true"/>
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.StandardTokenizerFactory" />
