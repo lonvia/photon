@@ -35,6 +35,10 @@ public class PhotonRequest {
     public int getLimit() {
         return limit;
     }
+
+    public int getQueryLimit() {
+        return limit > 1 ? (int) Math.round(limit * 1.5) : 1;
+    }
     
     public Envelope getBbox() {
         return bbox;

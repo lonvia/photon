@@ -3,6 +3,8 @@ package de.komoot.photon.solr;
 import de.komoot.photon.query.PhotonRequest;
 import de.komoot.photon.searcher.PhotonResult;
 import de.komoot.photon.searcher.SearchHandler;
+import de.komoot.photon.searcher.TagFilter;
+import de.komoot.photon.searcher.TagFilterKind;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -10,6 +12,8 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.SolrParams;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,12 +31,17 @@ public class SolrSearchHandler implements SearchHandler {
 
     @Override
     public List<PhotonResult> search(PhotonRequest request) {
-        SolrQuery query = buildQuery(request);
+        SolrQueryBuilder builder = buildQuery(request);
 
         try {
-            final QueryResponse response = client.query(query);
-            final List<PhotonResult> results = new ArrayList<>(response.getResults().size());
+            QueryResponse response = client.query(builder.build());
 
+            if (response.getResults().size() == 0) {
+                relaxQuery(builder);
+                response = client.query(builder.build());
+            }
+
+            final List<PhotonResult> results = new ArrayList<>(response.getResults().size());
             for (SolrDocument doc : response.getResults()) {
                 results.add(new SolrResult(doc));
             }
@@ -52,30 +61,34 @@ public class SolrSearchHandler implements SearchHandler {
         return buildQuery(photonRequest).toString();
     }
 
-    private SolrQuery buildQuery(PhotonRequest request) {
-        final String inquery = request.getQuery().trim();
-        final int lastSpace = inquery.lastIndexOf(' ');
+    private SolrQueryBuilder buildQuery(PhotonRequest request) {
+        final SolrQueryBuilder builder = new SolrQueryBuilder(request.getQuery(), request.getQueryLimit());
 
-        final StringBuffer solrTerm = new StringBuffer();
+        // Basic search query (all terms must show up).
+        builder.allTermsQuery(builder.numTerms() == 1 ? "collector.name.ngram" : "collector.all.ngram");
 
-        if (lastSpace <= 0) {
-            // just one term, use the name collector
-            solrTerm.append("collector.name.ngram:");
-            solrTerm.append(inquery);
-        } else {
-            solrTerm.append("collector.all.ngram:(");
-            solrTerm.append(inquery.substring(0, lastSpace).replaceAll(" ", " && "));
-            solrTerm.append(") AND collector.all.ngram:");
-            solrTerm.append(inquery, lastSpace + 1, inquery.length());
+        // Require the name to be somewhere in the search query.
+        if (builder.numTerms() > 1) {
+            builder.addFilterOverTerms("collector.name.ngram", "1");
         }
 
-        SolrQuery query = new SolrQuery(solrTerm.toString());
-
-        if (lastSpace > 0) {
-            query.addFilterQuery("collector.name.ngram:(" + inquery.replaceAll(" ", " || ") + ")");
+        // Classification filters
+        for (TagFilter filter : request.getOsmTagFilters()) {
+            builder.addTagFilter(filter);
         }
 
-        log.info("Query: " + query);
-        return query;
+        // Boosting
+        builder.addBoostOverTerms("name.default") // TODO: need max over both
+                .addBoostOverTerms("name." + request.getLanguage())
+                .addBoost("add(importance, 0.0001)");
+
+        log.info(builder.debugInfo());
+
+        return builder;
+    }
+
+    private void relaxQuery(SolrQueryBuilder builder) {
+        builder.allTermsQuery(builder.numTerms() == 1 ? "collector.name.ngram" : "collector.all.ngram", 1, "-1");
+        log.info("[RELAXED]" + builder.debugInfo());
     }
 }

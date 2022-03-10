@@ -106,7 +106,7 @@ public class SolrResult implements PhotonResult {
 
     @Override
     public double getScore() {
-        Double result = (Double) document.get("score");
+        Float result = (Float) document.get("score");
 
         return (result == null) ? 0 : result;
     }

@@ -239,10 +239,7 @@
         </plugins>
         <resources>
             <resource>
-                <directory>${project.build.directory}/es/</directory>
-            </resource>
-            <resource>
-                <directory>es/</directory>
+                <directory>solr/</directory>
             </resource>
             <resource>
                 <directory>src/main/resources/</directory>

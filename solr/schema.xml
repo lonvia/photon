@@ -4,14 +4,20 @@
   <!-- Field type definitions -->
 
   <fieldType name="string" class="solr.StrField" stored="true" indexed="false" />
-  <fieldType name="name" class="solr.TextField" multiValued="true" stored="true" indexed="false" />
   <fieldType name="point" class="solr.LatLonPointSpatialField" stored="true" />
   <fieldType name="bbox" class="solr.DoublePointField" multiValued="true" stored="true" indexed="false" />
-  <fieldType name="score" class="solr.DoublePointField" stored="true"  indexed="false"/>
-  <fieldType name="long" class="solr.LongPointField" stored="true"  indexed="false"/>
+  <fieldType name="score" class="solr.DoublePointField" stored="true"  indexed="false" docValues="true" />
+  <fieldType name="long" class="solr.LongPointField" stored="true"  indexed="false" />
+
+  <fieldType name="name" class="solr.TextField" multiValued="true" stored="true" indexed="false">
+    <analyzer>
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.ICUFoldingFilterFactory"/>
+    </analyzer>
+  </fieldType>
 
   <!-- language-agnostic collector fields -->
-  <fieldType name="token_collector" class="solr.TextField" multiValued="true" indexed="true" stored="true">
+  <fieldType name="token_collector" class="solr.TextField" multiValued="true" indexed="true" stored="true" >
     <analyzer type="index">
       <tokenizer class="solr.StandardTokenizerFactory"/>
       <filter class="solr.ICUFoldingFilterFactory"/>
@@ -21,7 +27,7 @@
       <filter class="solr.ICUFoldingFilterFactory"/>
     </analyzer>
   </fieldType>
-  <fieldType name="ngram_collector" class="solr.TextField" multiValued="true" indexed="true" stored="true">
+  <fieldType name="ngram_collector" class="solr.TextField" multiValued="true" indexed="true" stored="true" >
     <analyzer type="index">
       <tokenizer class="solr.StandardTokenizerFactory" />
       <filter class="solr.ICUFoldingFilterFactory"/>
@@ -43,12 +49,12 @@
   <field name="osm_value" type="string" indexed="true" />
   <field name="object_type" type="string" />
 
-  <field name="name.default" type="name" />
-  <dynamicField name="name.*" type="name" />
+  <field name="name.default" type="name" indexed="true" />
+  <dynamicField name="name.*" type="name" indexed="true" />
 
   <field name="housenumber" type="name" />
 
-  <field name="importance" type="score" />
+  <field name="importance" type="score" indexed="true" />
   <field name="classification" type="string" />
 
   <!-- Geometries -->
