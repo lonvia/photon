@@ -120,7 +120,7 @@ public class Server {
     }
 
     public ReverseHandler createReverseHandler() {
-        return new SolrReverseHandler();
+        return new SolrReverseHandler(getSolrClient());
     }
 
     private void copyResourceToFile(String resource, Path output) throws IOException {

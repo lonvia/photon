@@ -82,8 +82,6 @@ public class SolrSearchHandler implements SearchHandler {
                 .addBoostOverTerms("name." + request.getLanguage())
                 .addBoost("add(importance, 0.0001)");
 
-        log.info(builder.debugInfo());
-
         return builder;
     }
 

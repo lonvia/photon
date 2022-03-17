@@ -4,7 +4,7 @@
   <!-- Field type definitions -->
 
   <fieldType name="string" class="solr.StrField" stored="true" indexed="false" />
-  <fieldType name="point" class="solr.LatLonPointSpatialField" stored="true" />
+  <fieldType name="point" class="solr.LatLonPointSpatialField" stored="true" docValues="true" />
   <fieldType name="bbox" class="solr.DoublePointField" multiValued="true" stored="true" indexed="false" />
   <fieldType name="score" class="solr.DoublePointField" stored="true"  indexed="false" docValues="true" />
   <fieldType name="long" class="solr.LongPointField" stored="true"  indexed="false" />

@@ -1,7 +1,7 @@
 package de.komoot.photon.query;
 
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Point;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Point;
 import de.komoot.photon.ESBaseTester;
 import de.komoot.photon.Importer;
 import de.komoot.photon.searcher.PhotonResult;
@@ -57,7 +57,7 @@ class QueryReverseTest extends ESBaseTester {
         List<PhotonResult> results = reverse(10, 10, 0.1, 1);
 
         assertEquals(1, results.size());
-        assertEquals(100, results.get(0).get("osm_id"));
+        assertEquals(100L, results.get(0).get("osm_id"));
     }
 
     @ParameterizedTest
@@ -66,8 +66,8 @@ class QueryReverseTest extends ESBaseTester {
         List<PhotonResult> results = reverse(10, 10, 20, limit);
 
         assertEquals(2, results.size());
-        assertEquals(100, results.get(0).get("osm_id"));
-        assertEquals(101, results.get(1).get("osm_id"));
+        assertEquals(100L, results.get(0).get("osm_id"));
+        assertEquals(101L, results.get(1).get("osm_id"));
     }
 
 

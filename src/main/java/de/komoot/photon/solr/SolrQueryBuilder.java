@@ -2,14 +2,17 @@ package de.komoot.photon.solr;
 
 import de.komoot.photon.searcher.TagFilter;
 import de.komoot.photon.searcher.TagFilterKind;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.*;
+import org.locationtech.jts.geom.Point;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 class SolrQueryBuilder {
     private final String[] terms;
     private ModifiableSolrParams query = new ModifiableSolrParams();
@@ -21,7 +24,14 @@ class SolrQueryBuilder {
                 .map(s -> ClientUtils.escapeQueryChars(s))
                 .toArray(String[]::new);
 
-        // default query settings (TODO: move to endpoint)
+        // default query settings
+        query.set(CommonParams.FL, "* score");
+        query.set(CommonParams.ROWS, limit);
+    }
+
+    public SolrQueryBuilder(int limit) {
+        terms = null;
+        // default query settings
         query.set(CommonParams.FL, "* score");
         query.set(CommonParams.ROWS, limit);
     }
@@ -95,8 +105,35 @@ class SolrQueryBuilder {
         return this;
     }
 
+    public SolrQueryBuilder addGeoFilter(boolean useDistanceSort) {
+        query.add(CommonParams.FQ, "{!geofilt cache=false}");
+
+        query.set("q", useDistanceSort ? "{!func}geodist()" : "*.*");
+
+        if (useDistanceSort) {
+            addSort("score asc");
+        }
+
+        return this;
+    }
+
     public SolrQueryBuilder addBoostOverTerms(String field) {
         query.set("bq", field + ":(" + String.join(" || ", terms) + ")");
+
+        return this;
+    }
+
+    public SolrQueryBuilder addSort(String func) {
+        query.add("sort", func);
+
+        return this;
+    }
+
+
+    public SolrQueryBuilder setSpatialParams(String field, Point center, double distance) {
+        query.set("sfield", field);
+        query.set("pt", String.format("%f,%f", center.getY(), center.getX()));
+        query.set("d", Double.toString(distance));
 
         return this;
     }
@@ -107,6 +144,10 @@ class SolrQueryBuilder {
             query.add(CommonParams.FQ, String.join(" || ", orFilterTerms));
             orFilterTerms = null;
         }
+
+        log.info(debugInfo());
+
+
         return query;
     }
 
