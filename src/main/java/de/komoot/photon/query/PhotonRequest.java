@@ -48,6 +48,8 @@ public class PhotonRequest {
         return locationForBias;
     }
 
+    public boolean hasLocationBias() { return locationForBias != null && zoom >= 4; }
+
     public double getScaleForBias() {
         return scale;
     }

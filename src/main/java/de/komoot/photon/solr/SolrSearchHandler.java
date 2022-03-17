@@ -79,8 +79,20 @@ public class SolrSearchHandler implements SearchHandler {
 
         // Boosting
         builder.addBoostOverTerms("name.default") // TODO: need max over both
-                .addBoostOverTerms("name." + request.getLanguage())
-                .addBoost("add(importance, 0.0001)");
+                .addBoostOverTerms("name." + request.getLanguage());
+
+        if (request.hasLocationBias()) {
+            final double scale = request.getScaleForBias();
+            final int zoom = Integer.min(request.getZoomForBias(), 18);
+            final double radius = (1 << (18 - zoom)) * 0.25;
+            final double decay = 1;
+            final double radius_decay = decay * 10 / radius;
+            builder.addBoost("max(recip(max(0, sub(geodist(), " + radius + ")), " + radius_decay + "," + decay + "," + decay + "), linear(importance, " + scale/2.0 + " ,0.0001))");
+            builder.setSpatialParams("coordinate", request.getLocationForBias(), radius);
+        } else {
+            builder.addBoost("add(importance, 0.0001)");
+        }
+
 
         return builder;
     }

@@ -57,7 +57,7 @@ class QueryRelevanceTest extends ESBaseTester {
         List<PhotonResult> results = search("new york");
 
         assertEquals(2, results.size());
-        assertEquals(2000, results.get(0).get("osm_id"));
+        assertEquals(2000L, results.get(0).get("osm_id"));
     }
 
     @Test
@@ -71,7 +71,7 @@ class QueryRelevanceTest extends ESBaseTester {
         List<PhotonResult> results = search("ham");
 
         assertEquals(2, results.size());
-        assertEquals(1000, results.get(0).get("osm_id"));
+        assertEquals(1000L, results.get(0).get("osm_id"));
     }
 
     @Test
@@ -85,7 +85,7 @@ class QueryRelevanceTest extends ESBaseTester {
         List<PhotonResult> results = search("ham");
 
         assertEquals(2, results.size());
-        assertEquals(1001, results.get(0).get("osm_id"));
+        assertEquals(1001L, results.get(0).get("osm_id"));
     }
 
     @ParameterizedTest
@@ -103,7 +103,7 @@ class QueryRelevanceTest extends ESBaseTester {
                 .setLocationForBias(FACTORY.createPoint(new Coordinate(-9.9, -10))));
 
         assertEquals(2, results.size());
-        assertEquals(1001, results.get(0).get("osm_id"));
+        assertEquals(1001L, results.get(0).get("osm_id"));
     }
 
     @Test
@@ -122,6 +122,6 @@ class QueryRelevanceTest extends ESBaseTester {
                 .setLocationForBias(FACTORY.createPoint(new Coordinate(-9.9, -10))));
 
         assertEquals(2, results.size());
-        assertEquals(1000, results.get(0).get("osm_id"));
+        assertEquals(1000L, results.get(0).get("osm_id"));
     }
 }
