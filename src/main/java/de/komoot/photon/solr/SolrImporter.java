@@ -43,6 +43,7 @@ public class SolrImporter implements Importer {
         sendDocuments();
         try {
             client.commit();
+            client.optimize();
         } catch (SolrServerException e) {
             log.error("Commit failed: ", e);
         } catch (IOException e) {
