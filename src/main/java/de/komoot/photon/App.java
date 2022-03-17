@@ -35,9 +35,9 @@ public class App {
         boolean shutdownES = false;
         final Server esServer = new Server(args.getDataDirectory()).start(args.getCluster(), args.getTransportAddresses());
         try {
-            LOGGER.info("Make sure that the ES cluster is ready, this might take some time.");
+            LOGGER.info("Make sure that the cluster is ready, this might take some time.");
             esServer.waitForReady();
-            LOGGER.info("ES cluster is now ready.");
+            LOGGER.info("Cluster is now ready.");
 
             if (args.isNominatimImport()) {
                 shutdownES = true;
