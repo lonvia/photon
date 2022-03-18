@@ -1,8 +1,6 @@
 package de.komoot.photon.nominatim.testdb;
 
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.io.ParseException;
-import org.locationtech.jts.io.WKTReader;
 import de.komoot.photon.nominatim.DBDataAdapter;
 import org.json.JSONObject;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -30,16 +28,7 @@ public class H2DataAdapter implements DBDataAdapter {
 
     @Override
     public Geometry extractGeometry(ResultSet rs, String columnName) throws SQLException {
-        String wkt = (String) rs.getObject(columnName);
-        if (wkt != null) {
-            try {
-                return new WKTReader().read(wkt);
-            } catch (ParseException e) {
-                // ignore
-            }
-        }
-
-        return null;
+        return (Geometry) rs.getObject(columnName);
     }
 
     @Override

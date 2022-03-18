@@ -99,6 +99,30 @@ class NominatimConnectorDBTest {
         AssertUtil.assertAddressName("Le Havre", doc, AddressType.STATE);
     }
 
+
+    @Test
+    public void testPlaceAddressWithoutName() throws ParseException {
+        PlacexTestRow place = PlacexTestRow.make_street("Burg").add(jdbc);
+
+        place.addAddresslines(jdbc,
+                new PlacexTestRow("place", "neighbourhood").name("Le Coin").rankAddress(24).add(jdbc),
+                new PlacexTestRow("place", "suburb").rankAddress(20).add(jdbc),
+                new PlacexTestRow("place", "city").name("Grand Junction").rankAddress(16).add(jdbc),
+                new PlacexTestRow("place", "county").name("Lost County").rankAddress(12).add(jdbc),
+                new PlacexTestRow("place", "state").name("Le Havre").rankAddress(8).add(jdbc));
+
+        connector.readEntireDatabase();
+
+        assertEquals(5, importer.size());
+        importer.assertContains(place);
+
+        PhotonDoc doc = importer.get(place);
+
+        AssertUtil.assertAddressName("Le Coin", doc, AddressType.LOCALITY);
+        AssertUtil.assertAddressName("Grand Junction", doc, AddressType.CITY);
+        AssertUtil.assertAddressName("Lost County", doc, AddressType.COUNTY);
+        AssertUtil.assertAddressName("Le Havre", doc, AddressType.STATE);
+    }
     @Test
     void testPoiAddress() throws ParseException {
         PlacexTestRow parent = PlacexTestRow.make_street("Burg").add(jdbc);

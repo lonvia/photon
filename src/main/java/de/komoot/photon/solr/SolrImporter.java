@@ -113,10 +113,12 @@ public class SolrImporter implements Importer {
         // Address parts
         for (Map.Entry<AddressType, Map<String, String>> entry : doc.getAddressParts().entrySet()) {
             Map<String, String> names = entry.getValue();
-            String addrpart = entry.getKey().getName();
-            builder.addNoneNull(addrpart + ".default", names.get("name"));
-            for (String lang: languages) {
-                builder.addNoneNull(addrpart + "." + lang, names.get("name:" + lang));
+            if (names != null && !names.isEmpty()) {
+                String addrpart = entry.getKey().getName();
+                builder.addNoneNull(addrpart + ".default", names.get("name"));
+                for (String lang : languages) {
+                    builder.addNoneNull(addrpart + "." + lang, names.get("name:" + lang));
+                }
             }
         }
 
