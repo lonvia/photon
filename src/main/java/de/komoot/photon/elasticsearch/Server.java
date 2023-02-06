@@ -122,8 +122,10 @@ public class Server {
         return this;
     }
 
-    public void waitForReady() {
+    public void waitForReady()
+    {
         esClient.admin().cluster().prepareHealth().setWaitForYellowStatus().get();
+        esClient.admin().indices().prepareRefresh(PhotonIndex.NAME).get();
     }
 
     /**
