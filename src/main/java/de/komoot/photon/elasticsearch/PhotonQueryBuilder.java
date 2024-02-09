@@ -55,7 +55,7 @@ public class PhotonQueryBuilder {
         // 1. All terms of the quey must be contained in the place record somehow. Be more lenient on second try.
         MultiMatchQueryBuilder builder =
                 QueryBuilders.multiMatchQuery(query)
-                        .field("collector.default", 1.0f)
+                        .field("collector.default", 0.8f)
                         .type(lenient ? MultiMatchQueryBuilder.Type.BEST_FIELDS : MultiMatchQueryBuilder.Type.CROSS_FIELDS)
                         .prefixLength(2)
                         .analyzer("search_ngram")
@@ -72,7 +72,7 @@ public class PhotonQueryBuilder {
         // 2. Prefer records that have the full names in. For address records with housenumbers this is the main
         //    filter creterion because they have no name. Therefore boost the score in this case.
         MultiMatchQueryBuilder hnrQuery = QueryBuilders.multiMatchQuery(query)
-                .field("collector.default.raw", 1.0f)
+                .field("collector.default.raw", 0.8f)
                 .type(MultiMatchQueryBuilder.Type.BEST_FIELDS);
 
         for (String lang : languages) {
