@@ -4,25 +4,17 @@ import de.komoot.photon.query.PhotonRequest;
 import de.komoot.photon.searcher.PhotonResult;
 import de.komoot.photon.searcher.SearchHandler;
 import de.komoot.photon.searcher.TagFilter;
-import de.komoot.photon.searcher.TagFilterKind;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.SolrParams;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-@Slf4j
 public class SolrSearchHandler implements SearchHandler {
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(SolrSearchHandler.class);
     private final SolrClient client;
 
     SolrSearchHandler(SolrClient client) {
@@ -99,6 +91,6 @@ public class SolrSearchHandler implements SearchHandler {
 
     private void relaxQuery(SolrQueryBuilder builder) {
         builder.allTermsQuery(builder.numTerms() == 1 ? "collector.name.ngram" : "collector.all.ngram", 1, "-1");
-        log.info("[RELAXED]" + builder.debugInfo());
+        LOGGER.info("[RELAXED]" + builder.debugInfo());
     }
 }

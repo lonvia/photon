@@ -4,7 +4,7 @@ import java.util.Date;
 
 import org.json.JSONObject;
 
-import de.komoot.photon.elasticsearch.Server;
+import de.komoot.photon.solr.Server;
 import spark.Request;
 import spark.Response;
 import spark.RouteImpl;

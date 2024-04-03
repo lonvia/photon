@@ -5,12 +5,17 @@ import de.komoot.photon.Updater;
 
 class SolrUpdater implements Updater {
     @Override
-    public void create(PhotonDoc doc) {
+    public void create(PhotonDoc doc, int objectId) {
 
     }
 
     @Override
-    public void delete(Long id) {
+    public boolean exists(long docId, int objectId) {
+        return false;
+    }
+
+    @Override
+    public void delete(long id, int objectId) {
 
     }
 

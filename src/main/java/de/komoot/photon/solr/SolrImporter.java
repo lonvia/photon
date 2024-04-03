@@ -3,7 +3,6 @@ package de.komoot.photon.solr;
 import de.komoot.photon.Importer;
 import de.komoot.photon.PhotonDoc;
 import de.komoot.photon.nominatim.model.AddressType;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
@@ -13,8 +12,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 
-@Slf4j
 public class SolrImporter implements Importer {
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(SolrImporter.class);
     private static final int BULK_SIZE = 10000;
 
     private final SolrClient client;
@@ -30,8 +29,8 @@ public class SolrImporter implements Importer {
     }
 
     @Override
-    public void add(PhotonDoc doc) {
-        pendingDocuments.add(convert(doc));
+    public void add(PhotonDoc doc, int objectId) {
+        pendingDocuments.add(convert(doc, objectId));
 
         if (pendingDocuments.size() >= BULK_SIZE) {
             sendDocuments();
@@ -45,9 +44,9 @@ public class SolrImporter implements Importer {
             client.commit();
             client.optimize();
         } catch (SolrServerException e) {
-            log.error("Commit failed: ", e);
+            LOGGER.error("Commit failed: ", e);
         } catch (IOException e) {
-            log.error("Commit failed: ", e);
+            LOGGER.error("Commit failed: ", e);
         }
     }
 
@@ -56,18 +55,18 @@ public class SolrImporter implements Importer {
         try {
             client.add(pendingDocuments);
         } catch (SolrServerException e) {
-            log.error("Documents could not be inserted: ", e);
+            LOGGER.error("Documents could not be inserted: ", e);
         } catch (IOException e) {
-            log.error("Documents could not be inserted: ", e);
+            LOGGER.error("Documents could not be inserted: ", e);
         }
         pendingDocuments = new ArrayList<>(BULK_SIZE);
     }
 
-    private SolrInputDocument convert(PhotonDoc doc) {
+    private SolrInputDocument convert(PhotonDoc doc, int objectId) {
         final AddressType atype = doc.getAddressType();
 
         DocumentBuilder builder = new DocumentBuilder()
-                .add("id", doc.getUid())
+                .add("id", objectId)
                 .add("osm_type", doc.getOsmType())
                 .add("osm_id", doc.getOsmId())
                 .add("osm_key", doc.getTagKey())

@@ -31,11 +31,11 @@ public class ESBaseTester {
         return new PhotonDoc(id, "W", osmId, key, value).names(Collections.singletonMap("name", "berlin")).centroid(location);
     }
 
-    protected PhotonResult getById(int id) {
-        return getById(String.valueOf(id));
+    protected PhotonResult getById(String id) {
+        return getById(Integer.parseInt(id));
     }
 
-    protected PhotonResult getById(String id) {
+    protected PhotonResult getById(int id) {
         return server.getById(id);
     }
 

@@ -2,7 +2,6 @@ package de.komoot.photon.solr;
 
 import de.komoot.photon.searcher.TagFilter;
 import de.komoot.photon.searcher.TagFilterKind;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.*;
 import org.locationtech.jts.geom.Point;
@@ -12,8 +11,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Slf4j
 class SolrQueryBuilder {
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(SolrQueryBuilder.class);
     private final String[] terms;
     private ModifiableSolrParams query = new ModifiableSolrParams();
 
@@ -145,7 +144,7 @@ class SolrQueryBuilder {
             orFilterTerms = null;
         }
 
-        log.info(debugInfo());
+        LOGGER.info(debugInfo());
 
 
         return query;

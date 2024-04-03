@@ -5,9 +5,7 @@ import de.komoot.photon.Importer;
 import de.komoot.photon.Updater;
 import de.komoot.photon.searcher.ReverseHandler;
 import de.komoot.photon.searcher.SearchHandler;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 
 import java.io.File;
@@ -17,9 +15,10 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Date;
 
-@Slf4j
 public class Server {
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Server.class);
         /**
      * Database version created by new imports with the current code.
      *
@@ -62,12 +61,12 @@ public class Server {
             try {
                 client.close();
             } catch (IOException e) {
-                log.error("Closing failed: ", e);
+                LOGGER.error("Closing failed: ", e);
             }
         }
     }
 
-    public DatabaseProperties recreateIndex(String[] languages) throws IOException {
+    public DatabaseProperties recreateIndex(String[] languages, Date importDate) throws IOException {
         final Path coreDirectory = dataDirectory.resolve(coreName);
 
         final File dataAsFile = dataDirectory.toFile();
@@ -115,11 +114,11 @@ public class Server {
         return new SolrUpdater();
     }
 
-    public SearchHandler createSearchHandler(String[] languages) {
+    public SearchHandler createSearchHandler(String[] languages, int queryTimeoutSec) {
         return new SolrSearchHandler(getSolrClient());
     }
 
-    public ReverseHandler createReverseHandler() {
+    public ReverseHandler createReverseHandler(int queryTimeoutSec) {
         return new SolrReverseHandler(getSolrClient());
     }
 

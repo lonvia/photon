@@ -41,6 +41,11 @@ public class SolrReverseHandler implements ReverseHandler {
         return null;
     }
 
+    @Override
+    public String dumpQuery(ReverseRequest photonRequest) {
+        return "";
+    }
+
     private SolrQueryBuilder buildQuery(ReverseRequest request) {
         final SolrQueryBuilder builder = new SolrQueryBuilder(request.getLimit())
                 .addGeoFilter(request.getLocationDistanceSort())

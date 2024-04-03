@@ -179,13 +179,6 @@
                         </configuration>
                     </execution>
                 </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>io.github.edwgiz</groupId>
-                        <artifactId>log4j-maven-shade-plugin-extensions</artifactId>
-                        <version>${log4j.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
