@@ -47,7 +47,7 @@
   <field name="osm_id" type="long" />
   <field name="osm_key" type="string" indexed="true" />
   <field name="osm_value" type="string" indexed="true" />
-  <field name="object_type" type="string" />
+  <field name="object_type" type="string" indexed="true" />
 
   <field name="name.default" type="name" indexed="true" />
   <dynamicField name="name.*" type="name" indexed="true" />

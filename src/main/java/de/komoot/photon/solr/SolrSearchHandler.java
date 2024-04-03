@@ -69,6 +69,10 @@ public class SolrSearchHandler implements SearchHandler {
             builder.addTagFilter(filter);
         }
 
+        for (String layer: request.getLayerFilters()) {
+            builder.addLayerFilter(layer);
+        }
+
         // Boosting
         builder.addBoostOverTerms("name.default") // TODO: need max over both
                 .addBoostOverTerms("name." + request.getLanguage());

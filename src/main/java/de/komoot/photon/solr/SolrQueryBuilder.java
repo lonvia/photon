@@ -88,6 +88,12 @@ class SolrQueryBuilder {
         return this;
     }
 
+    public SolrQueryBuilder addLayerFilter(String layer) {
+        addOrFilter("object_type:" + layer);
+
+        return this;
+    }
+
     public SolrQueryBuilder addBoost(String rawBoostTerm) {
         query.add("boost", rawBoostTerm);
 
