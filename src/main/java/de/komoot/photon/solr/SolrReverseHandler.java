@@ -3,6 +3,7 @@ package de.komoot.photon.solr;
 import de.komoot.photon.query.ReverseRequest;
 import de.komoot.photon.searcher.PhotonResult;
 import de.komoot.photon.searcher.ReverseHandler;
+import de.komoot.photon.searcher.TagFilter;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -50,6 +51,15 @@ public class SolrReverseHandler implements ReverseHandler {
         final SolrQueryBuilder builder = new SolrQueryBuilder(request.getLimit())
                 .addGeoFilter(request.getLocationDistanceSort())
                 .setSpatialParams("coordinate", request.getLocation(), request.getRadius());
+
+        // Classification filters
+        for (TagFilter filter : request.getOsmTagFilters()) {
+            builder.addTagFilter(filter);
+        }
+
+        for (String layer: request.getLayerFilters()) {
+            builder.addLayerFilter(layer);
+        }
 
         return builder;
     }
