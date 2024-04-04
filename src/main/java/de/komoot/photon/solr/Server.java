@@ -6,7 +6,9 @@ import de.komoot.photon.Updater;
 import de.komoot.photon.searcher.ReverseHandler;
 import de.komoot.photon.searcher.SearchHandler;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.common.SolrDocument;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -15,7 +17,9 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.Date;
+import java.util.Map;
 
 public class Server {
     private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Server.class);
@@ -28,12 +32,13 @@ public class Server {
      * changes in an incompatible way. If it is alredy at the next released
      * version, increase the dev version.
      */
-    private static final String DATABASE_VERSION = "1.0.0-0";
+    private static final String DATABASE_VERSION = "2.0.0-0";
     public static final String PROPERTY_DOCUMENT_ID = "DATABASE_PROPERTIES";
 
-    private static final String BASE_FIELD = "document_properties";
+    private static final String BASE_FIELD = "prop";
     private static final String FIELD_VERSION = "database_version";
     private static final String FIELD_LANGUAGES = "indexed_languages";
+    private static final String FIELD_IMPORT_DATE = "import_date";
 
     private final Path dataDirectory;
     private String coreName;
@@ -89,6 +94,7 @@ public class Server {
 
 
         DatabaseProperties dbProperties = new DatabaseProperties().setLanguages(languages);
+        dbProperties.setImportDate(importDate);
         saveToDatabase(dbProperties);
 
         return dbProperties;
@@ -99,11 +105,49 @@ public class Server {
     }
 
     public void saveToDatabase(DatabaseProperties dbProperties) throws IOException  {
-        // TODO: needs doing
+        DocumentBuilder builder = new DocumentBuilder()
+                .add("id", PROPERTY_DOCUMENT_ID)
+                .add(BASE_FIELD, FIELD_VERSION, DATABASE_VERSION)
+                .add(BASE_FIELD, FIELD_LANGUAGES, String.join(",", dbProperties.getLanguages()));
+
+        if (dbProperties.getImportDate() != null) {
+            builder.add(BASE_FIELD, FIELD_IMPORT_DATE, dbProperties.getImportDate().toInstant().toString());
+        }
+
+        try {
+            getSolrClient().add(builder.build());
+            getSolrClient().commit();
+        } catch (SolrServerException e) {
+            throw new RuntimeException("Cannot write properties to database.");
+        }
     }
 
     public void loadFromDatabase(DatabaseProperties dbProperties) {
-        // TODO: need the table stuff first
+        try {
+            SolrDocument document = getSolrClient().getById(PROPERTY_DOCUMENT_ID);
+
+            if (document == null) {
+                throw new RuntimeException("Cannot find database properties. Database too old or corrupt?");
+            }
+
+            Map<String, String> properties = new SolrResult(document).getMap(BASE_FIELD);
+
+            String version = properties.getOrDefault(FIELD_VERSION, "");
+            if (!DATABASE_VERSION.equals(version)) {
+                LOGGER.error("Database has incompatible version '{}'. Expected: {}", version, DATABASE_VERSION);
+                throw new RuntimeException("Incompatible database.");
+            }
+
+            String langString = properties.get(FIELD_LANGUAGES);
+            dbProperties.setLanguages(langString == null ? null : langString.split(","));
+
+            String importDateString = properties.getOrDefault(FIELD_IMPORT_DATE, null);
+            dbProperties.setImportDate(importDateString == null ? null : Date.from(Instant.parse(importDateString)));
+        } catch (SolrServerException e) {
+            throw new RuntimeException("Cannot find database properties. Database too old or corrupt?");
+        } catch (IOException e) {
+            throw new RuntimeException("Cannot access database properties. Database too old or corrupt?");
+        }
     }
 
     public Importer createImporter(String[] languages, String[] extraTags) {

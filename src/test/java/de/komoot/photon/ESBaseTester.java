@@ -1,5 +1,6 @@
 package de.komoot.photon;
 
+import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
@@ -11,8 +12,10 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.TimeZone;
 
 /**
  * Start an ES server with some test data that then can be queried in tests that extend this class
@@ -56,7 +59,10 @@ public class ESBaseTester {
     public void setUpES(Path test_directory, String... languages) throws IOException {
         server = new SolrTestServer(test_directory.resolve("photon_test_data").toString());
         server.start(TEST_CLUSTER_NAME, new String[]{});
-        server.recreateIndex(languages, new Date());
+        server.recreateIndex(languages, new Calendar.Builder()
+                                            .setDate(2020, 11,4)
+                                            .setTimeOfDay(4, 13, 9)
+                                            .setTimeZone(TimeZone.getTimeZone("UTC")).build().getTime());
         refresh();
     }
 

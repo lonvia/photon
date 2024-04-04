@@ -126,4 +126,7 @@
 
   <!-- Catch-all extratags -->
   <dynamicField name="extra.*" type="string" indexed="false" stored="true"/>
+
+  <!-- Property fields for special property document -->
+  <dynamicField name="prop.*" type="string" indexed="false" stored="true" />
 </schema>

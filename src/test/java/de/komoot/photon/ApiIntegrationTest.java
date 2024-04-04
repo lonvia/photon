@@ -164,14 +164,12 @@ class ApiIntegrationTest extends ESBaseTester {
 
     @Test
     void testApiStatus() throws Exception {
-        App.main(new String[]{"-cluster", TEST_CLUSTER_NAME, "-listen-port", Integer.toString(LISTEN_PORT), "-transport-addresses", "127.0.0.1"});
-        awaitInitialization();
-        DatabaseProperties prop = new DatabaseProperties();
-        getServer().loadFromDatabase(prop);
+        startApp();
+
         HttpURLConnection connection = (HttpURLConnection) new URL("http://127.0.0.1:" + port() + "/status").openConnection();
         JSONObject json = new JSONObject(
                 new BufferedReader(new InputStreamReader(connection.getInputStream())).lines().collect(Collectors.joining("\n")));
         assertEquals("Ok", json.getString("status"));
-        assertEquals(prop.getImportDate().toInstant().toString(), json.getString("import_date"));
+        assertEquals("2020-12-04T04:13:09Z", json.getString("import_date"));
     }
 }

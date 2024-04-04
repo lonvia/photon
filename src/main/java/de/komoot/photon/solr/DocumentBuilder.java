@@ -10,6 +10,11 @@ class DocumentBuilder {
         return this;
     };
 
+    public DocumentBuilder add(String mapName, String field, Object value) {
+        doc.addField(mapName + '.' + field, value);
+        return this;
+    };
+
     public DocumentBuilder addNoneNull(String field, Object value) {
         if (value != null) {
             doc.addField(field, value);
