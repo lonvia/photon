@@ -2,6 +2,7 @@ package de.komoot.photon.solr;
 
 import de.komoot.photon.Importer;
 import de.komoot.photon.PhotonDoc;
+import de.komoot.photon.Utils;
 import de.komoot.photon.nominatim.model.AddressType;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -73,7 +74,7 @@ public class SolrImporter implements Importer {
                 .add("osm_value", doc.getTagValue())
                 .add("object_type", atype == null ? "locality" : atype.getName())
                 .add("importance", doc.getImportance())
-                .addNoneNull("classification", buildClassificationString(doc.getTagKey(), doc.getTagValue()))
+                .addNoneNull("classification", Utils.buildClassificationString(doc.getTagKey(), doc.getTagValue()))
                 .addNoneNull("housenumber", doc.getHouseNumber())
                 .addNoneNull("postcode", doc.getPostcode());
 
@@ -135,27 +136,5 @@ public class SolrImporter implements Importer {
         }
 
         return builder.build();
-    }
-
-    private String buildClassificationString(String key, String value) {
-        if ("place".equals(key) || "building".equals(key)) {
-            return null;
-        }
-
-        if ("highway".equals(key)
-                && ("unclassified".equals(value) || "residential".equals(value))) {
-            return null;
-        }
-
-        for (char c : value.toCharArray()) {
-            if (!(c == '_'
-                    || ((c >= 'a') && (c <= 'z'))
-                    || ((c >= 'A') && (c <= 'Z'))
-                    || ((c >= '0') && (c <= '9')))) {
-                return null;
-            }
-        }
-
-        return "tpfld" + value.replaceAll("_", "").toLowerCase() + "clsfld" + key.replaceAll("_", "").toLowerCase();
     }
 }

@@ -21,7 +21,7 @@ class QueryByClassificationTest extends ESBaseTester {
     @TempDir
     static Path sharedTempDir;
 
-    private int testDocId = 10000;
+    private long testDocId = 10000;
 
     @BeforeEach
     void setup() throws IOException {
@@ -79,7 +79,7 @@ class QueryByClassificationTest extends ESBaseTester {
 
         assertNotNull(class_term);
 
-        PhotonResult response = getById(testDocId);
+        PhotonResult response = getById(0);
         String classification = (String) response.get(Constants.CLASSIFICATION);
         assertEquals(classification, class_term);
 
@@ -96,14 +96,17 @@ class QueryByClassificationTest extends ESBaseTester {
         instance.finish();
         refresh();
 
+        List<PhotonResult> result = search("curlflower kneipe");
+        assertTrue(result.isEmpty());
+
         updateClassification("amenity", "restaurant", "pub", "kneipe");
 
-        List<PhotonResult> result = search("pub curli");
+        result = search("pub kurli");
         assertTrue(result.size() > 0);
         assertEquals(testDocId, result.get(0).get("osm_id"));
 
 
-        result = search("curliflower kneipe");
+        result = search("curlflower kneipe");
         assertTrue(result.size() > 0);
         assertEquals(testDocId, result.get(0).get("osm_id"));
     }
@@ -113,14 +116,14 @@ class QueryByClassificationTest extends ESBaseTester {
     void testSynonymDoNotInterfereWithWords() {
         Importer instance = makeImporter();
         instance.add(createDoc("amenity", "restaurant", "airport"), 0);
-        instance.add(createDoc("aeroway", "terminal", "Houston"), 0);
+        instance.add(createDoc("aeroway", "terminal", "Houston"), 1);
         instance.finish();
         refresh();
 
         updateClassification("aeroway", "terminal", "airport");
 
         List<PhotonResult> result = search("airport");
-        assertTrue(result.size() > 0);
+        assertFalse(result.isEmpty());
         assertEquals(testDocId - 1, result.get(0).get("osm_id"));
 
 
@@ -133,7 +136,7 @@ class QueryByClassificationTest extends ESBaseTester {
     void testSameSynonymForDifferentTags() {
         Importer instance = makeImporter();
         instance.add(createDoc("railway", "halt", "Newtown"), 0);
-        instance.add(createDoc("railway", "station", "King's Cross"), 0);
+        instance.add(createDoc("railway", "station", "King's Cross"), 1);
         instance.finish();
         refresh();
 

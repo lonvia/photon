@@ -25,6 +25,8 @@
     <analyzer type="query">
       <tokenizer class="solr.StandardTokenizerFactory"/>
       <filter class="solr.ICUFoldingFilterFactory"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="classification.txt"/>
     </analyzer>
   </fieldType>
   <fieldType name="ngram_collector" class="solr.TextField" multiValued="true" indexed="true" stored="true" >
@@ -35,6 +37,8 @@
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.StandardTokenizerFactory" />
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="classification.txt" />
       <filter class="solr.ICUFoldingFilterFactory"/>
     </analyzer>
   </fieldType>
@@ -118,6 +122,7 @@
   <copyField source="country.*" dest="collector.all.ngram" />
   <copyField source="context.*" dest="collector.all.ngram" />
   <copyField source="postcode" dest="collector.all.ngram" />
+  <copyField source="classification" dest="collector.all.ngram" />
 
   <field name="collector.name.ngram" type="ngram_collector" />
   <copyField source="name.*" dest="collector.name.ngram" />
