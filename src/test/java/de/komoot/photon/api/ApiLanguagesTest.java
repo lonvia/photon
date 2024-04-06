@@ -53,16 +53,19 @@ class ApiLanguagesTest extends ESBaseTester {
         instance.add(createDoc(1000, "place", "city",
                 "name:en", "thething", "name:fr", "letruc", "name:ch", "dasding"), 0);
         instance.add(createDoc(1001, "place", "town",
-                "name:ch", "thething", "name:fr", "letruc", "name:en", "dasding"), 0);
+                "name:ch", "thething", "name:fr", "letruc", "name:en", "dasding"), 1);
         instance.finish();
         refresh();
+        tearDown();
     }
 
     private void startAPI(String languages) throws Exception {
         List<String> params = new ArrayList<>(Arrays.asList("-cluster", TEST_CLUSTER_NAME,
                 "-listen-port", Integer.toString(LISTEN_PORT),
                 "-transport-addresses", "127.0.0.1",
-                "-cors-any"));
+                "-cors-any",
+                "-data-dir", dataDirectory.resolve("photon_test_data").toString()
+                ));
 
         if (languages.length() > 0) {
             params.add("-languages");
@@ -113,7 +116,7 @@ class ApiLanguagesTest extends ESBaseTester {
         startAPI("en,fr");
 
         JSONArray results = query("q=thething");
-        assertEquals(1, results.length());
+        assertEquals(1000, getOsmId(results, 0));
     }
 
 }
