@@ -12,6 +12,8 @@ import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.core.CoreContainer;
+import org.checkerframework.checker.units.qual.C;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -47,6 +49,7 @@ public class Server {
     private String[] transportAddresses;
 
     private SolrClient client = null;
+    private CoreContainer container = null;
 
     public Server(String mainDirectory) {
         dataDirectory = Paths.get(mainDirectory).toAbsolutePath();
@@ -67,6 +70,7 @@ public class Server {
         if (client != null) {
             try {
                 client.close();
+                container.shutdown();
             } catch (IOException e) {
                 LOGGER.error("Closing failed: ", e);
             }
@@ -235,7 +239,8 @@ public class Server {
 
     protected SolrClient getSolrClient() {
         if (client == null) {
-            client = new EmbeddedSolrServer(dataDirectory, coreName);
+            container = CoreContainer.createAndLoad(dataDirectory);
+            client = new EmbeddedSolrServer(container, coreName);
         }
 
         return client;

@@ -55,6 +55,7 @@ public class SolrImporter implements Importer {
 
         try {
             client.add(pendingDocuments);
+            client.commit(true, true);
         } catch (SolrServerException e) {
             LOGGER.error("Documents could not be inserted: ", e);
         } catch (IOException e) {
@@ -67,7 +68,7 @@ public class SolrImporter implements Importer {
         final AddressType atype = doc.getAddressType();
 
         DocumentBuilder builder = new DocumentBuilder()
-                .add("id", objectId)
+                .add("id", doc.getUid(objectId))
                 .add("osm_type", doc.getOsmType())
                 .add("osm_id", doc.getOsmId())
                 .add("osm_key", doc.getTagKey())

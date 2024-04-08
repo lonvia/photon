@@ -29,7 +29,7 @@ public class SolrImporterTest extends ESBaseTester {
         Importer instance = makeImporterWithExtra("");
 
         instance.add(new PhotonDoc(1234, "N", 1000, "place", "city")
-                .extraTags(Collections.singletonMap("maxspeed", "100")), 1234);
+                .extraTags(Collections.singletonMap("maxspeed", "100")), 0);
         instance.finish();
         refresh();
 
@@ -55,7 +55,7 @@ public class SolrImporterTest extends ESBaseTester {
 
         instance.add(new PhotonDoc(1234, "N", 1000, "place", "city")
                         .countryCode(countryCode)
-                        .extraTags(Collections.singletonMap("maxspeed", "100")), 1234);
+                        .extraTags(Collections.singletonMap("maxspeed", "100")), 0);
         instance.finish();
         refresh();
 
@@ -82,9 +82,9 @@ public class SolrImporterTest extends ESBaseTester {
         extratags.put("maxspeed", "100 mph");
         extratags.put("source", "survey");
 
-        instance.add(new PhotonDoc(1234, "N", 1000, "place", "city").extraTags(extratags), 1234);
+        instance.add(new PhotonDoc(1234, "N", 1000, "place", "city").extraTags(extratags), 0);
         instance.add(new PhotonDoc(1235, "N", 1001, "place", "city")
-                .extraTags(Collections.singletonMap("wikidata", "100")), 1235);
+                .extraTags(Collections.singletonMap("wikidata", "100")), 0);
         instance.finish();
         refresh();
 

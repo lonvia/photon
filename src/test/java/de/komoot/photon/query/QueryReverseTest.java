@@ -31,9 +31,9 @@ class QueryReverseTest extends ESBaseTester {
 
         Importer instance = makeImporter();
         instance.add(createDoc(10,10, 100, 100, "place", "house"), 0);
-        instance.add(createDoc(10,10.1, 101, 101, "place", "house"), 1);
-        instance.add(createDoc(10,10.2, 102, 102, "place", "house"), 2);
-        instance.add(createDoc(-10,-10, 202, 102, "place", "house"), 3);
+        instance.add(createDoc(10,10.1, 101, 101, "place", "house"), 0);
+        instance.add(createDoc(10,10.2, 102, 102, "place", "house"), 0);
+        instance.add(createDoc(-10,-10, 202, 102, "place", "house"), 0);
         instance.finish();
         refresh();
     }

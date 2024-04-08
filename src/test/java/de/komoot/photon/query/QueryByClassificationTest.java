@@ -21,7 +21,7 @@ class QueryByClassificationTest extends ESBaseTester {
     @TempDir
     static Path sharedTempDir;
 
-    private long testDocId = 10000;
+    private int testDocId = 10000;
 
     @BeforeEach
     void setup() throws IOException {
@@ -79,14 +79,14 @@ class QueryByClassificationTest extends ESBaseTester {
 
         assertNotNull(class_term);
 
-        PhotonResult response = getById(0);
+        PhotonResult response = getById(testDocId);
         String classification = (String) response.get(Constants.CLASSIFICATION);
         assertEquals(classification, class_term);
 
         List<PhotonResult> result = search(class_term + " curli");
 
         assertTrue(result.size() > 0);
-        assertEquals(testDocId, result.get(0).get("osm_id"));
+        assertEquals((long) testDocId, result.get(0).get("osm_id"));
     }
 
     @Test
@@ -103,12 +103,12 @@ class QueryByClassificationTest extends ESBaseTester {
 
         result = search("pub kurli");
         assertTrue(result.size() > 0);
-        assertEquals(testDocId, result.get(0).get("osm_id"));
+        assertEquals((long) testDocId, result.get(0).get("osm_id"));
 
 
         result = search("curlflower kneipe");
         assertTrue(result.size() > 0);
-        assertEquals(testDocId, result.get(0).get("osm_id"));
+        assertEquals((long) testDocId, result.get(0).get("osm_id"));
     }
 
 
@@ -116,7 +116,7 @@ class QueryByClassificationTest extends ESBaseTester {
     void testSynonymDoNotInterfereWithWords() {
         Importer instance = makeImporter();
         instance.add(createDoc("amenity", "restaurant", "airport"), 0);
-        instance.add(createDoc("aeroway", "terminal", "Houston"), 1);
+        instance.add(createDoc("aeroway", "terminal", "Houston"), 0);
         instance.finish();
         refresh();
 
@@ -124,19 +124,19 @@ class QueryByClassificationTest extends ESBaseTester {
 
         List<PhotonResult> result = search("airport");
         assertFalse(result.isEmpty());
-        assertEquals(testDocId - 1, result.get(0).get("osm_id"));
+        assertEquals((long) testDocId - 1, result.get(0).get("osm_id"));
 
 
         result = search("airport houston");
         assertTrue(result.size() > 0);
-        assertEquals(testDocId, result.get(0).get("osm_id"));
+        assertEquals((long) testDocId, result.get(0).get("osm_id"));
     }
 
     @Test
     void testSameSynonymForDifferentTags() {
         Importer instance = makeImporter();
         instance.add(createDoc("railway", "halt", "Newtown"), 0);
-        instance.add(createDoc("railway", "station", "King's Cross"), 1);
+        instance.add(createDoc("railway", "station", "King's Cross"), 0);
         instance.finish();
         refresh();
 
@@ -169,14 +169,14 @@ class QueryByClassificationTest extends ESBaseTester {
 
         List<PhotonResult> result = search("Station newtown");
         assertTrue(result.size() > 0);
-        assertEquals(testDocId - 1, result.get(0).get("osm_id"));
+        assertEquals((long) testDocId - 1, result.get(0).get("osm_id"));
 
         result = search("newtown stop");
         assertTrue(result.size() > 0);
-        assertEquals(testDocId - 1, result.get(0).get("osm_id"));
+        assertEquals((long) testDocId - 1, result.get(0).get("osm_id"));
 
         result = search("king's cross Station");
         assertTrue(result.size() > 0);
-        assertEquals(testDocId, result.get(0).get("osm_id"));
+        assertEquals((long) testDocId, result.get(0).get("osm_id"));
     }
 }

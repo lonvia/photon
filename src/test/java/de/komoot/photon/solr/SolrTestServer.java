@@ -11,9 +11,9 @@ public class SolrTestServer extends Server {
         super(mainDirectory);
     }
 
-    public PhotonResult getById(int id) {
+    public PhotonResult getById(String id) {
         try {
-            return new SolrResult(getSolrClient().getById(Integer.toString(id)));
+            return new SolrResult(getSolrClient().getById(id));
         } catch (SolrServerException e) {
             // fallthrough
         } catch (IOException e) {

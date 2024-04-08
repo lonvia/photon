@@ -53,7 +53,7 @@ class ApiLanguagesTest extends ESBaseTester {
         instance.add(createDoc(1000, "place", "city",
                 "name:en", "thething", "name:fr", "letruc", "name:ch", "dasding"), 0);
         instance.add(createDoc(1001, "place", "town",
-                "name:ch", "thething", "name:fr", "letruc", "name:en", "dasding"), 1);
+                "name:ch", "thething", "name:fr", "letruc", "name:en", "dasding"), 0);
         instance.finish();
         refresh();
         tearDown();
