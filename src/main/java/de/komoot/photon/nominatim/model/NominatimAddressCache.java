@@ -6,10 +6,7 @@ import org.slf4j.Logger;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Container for caching information about address parts.
@@ -17,14 +14,16 @@ import java.util.Map;
 public class NominatimAddressCache {
     private static final Logger LOGGER = org.slf4j.LoggerFactory.getLogger(NominatimAddressCache.class);
 
-    private static final String BASE_COUNTRY_QUERY =
-            "SELECT place_id, name, class, type, rank_address FROM placex" +
+    private static final String SQL_SELECT =
+            "SELECT place_id, name, class, type, rank_address FROM placex";
+    private static final String SQL_COUNTRY_WHERE =
             " WHERE rank_address between 5 and 25 AND linked_place_id is null";
 
     private final Map<Long, AddressRow> addresses = new HashMap<>();
+    private final RowCallbackHandler rowMapper;
 
-    public void loadCountryAddresses(JdbcTemplate template, DBDataAdapter dbutils, String countryCode) {
-        final RowCallbackHandler rowMapper = rs ->
+    public NominatimAddressCache(DBDataAdapter dbutils) {
+        this.rowMapper = rs ->
                 addresses.put(
                         rs.getLong("place_id"),
                         new AddressRow(
@@ -33,12 +32,14 @@ public class NominatimAddressCache {
                                 rs.getString("type"),
                                 rs.getInt("rank_address")
                         ));
+    }
 
 
+    public void loadCountryAddresses(JdbcTemplate template, String countryCode) {
         if ("".equals(countryCode)) {
-            template.query(BASE_COUNTRY_QUERY + " AND country_code is null", rowMapper);
+            template.query(SQL_SELECT + SQL_COUNTRY_WHERE + " AND country_code is null", rowMapper);
         } else {
-            template.query(BASE_COUNTRY_QUERY + " AND country_code = ?", rowMapper, countryCode);
+            template.query(SQL_SELECT + SQL_COUNTRY_WHERE + " AND country_code = ?", rowMapper, countryCode);
         }
 
         if (addresses.size() > 0) {
@@ -47,17 +48,46 @@ public class NominatimAddressCache {
     }
 
     public List<AddressRow> getAddressList(String addressline) {
-        ArrayList<AddressRow> outlist = new ArrayList<>();
+        if (addressline == null || addressline.isBlank()) {
+            return Collections.emptyList();
+        }
 
-        if (addressline != null && !addressline.isBlank()) {
-            JSONArray addressPlaces = new JSONArray(addressline);
-            for (int i = 0; i < addressPlaces.length(); ++i) {
-                Long placeId = addressPlaces.optLong(i);
-                if (placeId != null) {
-                    AddressRow row = addresses.get(placeId);
-                    if (row != null) {
-                        outlist.add(row);
-                    }
+        return makeAddressList(new JSONArray(addressline));
+    }
+
+    public List<AddressRow> getOrLoadAddressList(String addressline, JdbcTemplate template) {
+        if (addressline == null || addressline.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        final JSONArray addressPlaces = new JSONArray(addressline);
+
+        // Find any missing places.
+        final List<Long> missing = new ArrayList<>();
+        for (int i = 0; i < addressPlaces.length(); ++i) {
+            final Long placeId = addressPlaces.optLong(i);
+            if (placeId != null && !addresses.containsKey(placeId)) {
+                missing.add(placeId);
+            }
+        }
+
+        if (!missing.isEmpty()) {
+            template.query(SQL_SELECT + " WHERE place_id = ANY(?)",
+                           rowMapper, (Object) missing.toArray(new Long[0]));
+        }
+
+        return makeAddressList(addressPlaces);
+    }
+
+    private List<AddressRow> makeAddressList(JSONArray addressPlaces) {
+        final ArrayList<AddressRow> outlist = new ArrayList<>();
+
+        for (int i = 0; i < addressPlaces.length(); ++i) {
+            final Long placeId = addressPlaces.optLong(i);
+            if (placeId != null) {
+                final AddressRow row = addresses.get(placeId);
+                if (row != null) {
+                    outlist.add(row);
                 }
             }
         }

@@ -14,6 +14,10 @@ import java.sql.SQLException;
  * for the place.
  */
 public class PlaceRowMapper implements RowMapper<PhotonDoc> {
+    public static final String SQL_SELECT =
+            "SELECT p.place_id, p.osm_type, p.osm_id, p.class, p.type, p.name, p.postcode," +
+            "       p.address, p.extratags, ST_Envelope(p.geometry) AS bbox, p.parent_place_id," +
+            "       p.linked_place_id, p.rank_address, p.rank_search, p.importance, p.country_code, p.centroid,";
 
     private final DBDataAdapter dbutils;
 

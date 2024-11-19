@@ -52,15 +52,13 @@ public class NominatimImporter extends NominatimConnector {
             sqlArgTypes = new int[]{Types.VARCHAR};
         }
 
-        NominatimAddressCache addressCache = new NominatimAddressCache();
-        addressCache.loadCountryAddresses(template, dbutils, countryCode);
+        NominatimAddressCache addressCache = new NominatimAddressCache(dbutils);
+        addressCache.loadCountryAddresses(template, countryCode);
 
         final PlaceRowMapper placeRowMapper = new PlaceRowMapper(dbutils);
         // First read ranks below 30, independent places
         template.query(
-                "SELECT place_id, osm_type, osm_id, class, type, name, postcode," +
-                        "       address, extratags, ST_Envelope(geometry) AS bbox, parent_place_id," +
-                        "       linked_place_id, rank_address, rank_search, importance, country_code, centroid," +
+                PlaceRowMapper.SQL_SELECT +
                         dbutils.jsonArrayFromSelect(
                                 "address_place_id",
                                 "FROM place_addressline pa " +
@@ -89,9 +87,7 @@ public class NominatimImporter extends NominatimConnector {
 
         // Next get all POIs/housenumbers.
         template.query(
-                "SELECT p.place_id, p.osm_type, p.osm_id, p.class, p.type, p.name, p.postcode," +
-                        "       p.address, p.extratags, ST_Envelope(p.geometry) AS bbox, p.parent_place_id," +
-                        "       p.linked_place_id, p.rank_address, p.rank_search, p.importance, p.country_code, p.centroid," +
+                PlaceRowMapper.SQL_SELECT +
                         "       parent.class as parent_class, parent.type as parent_type," +
                         "       parent.rank_address as parent_rank_address, parent.name as parent_name, " +
                         dbutils.jsonArrayFromSelect(
@@ -130,17 +126,8 @@ public class NominatimImporter extends NominatimConnector {
 
         final OsmlineRowMapper osmlineRowMapper = new OsmlineRowMapper();
         template.query(
-                "SELECT p.place_id, p.osm_id, p.parent_place_id, p.startnumber, p.endnumber, p.postcode, p.country_code, p.linegeo," +
-                        (hasNewStyleInterpolation ? " p.step," : " p.interpolationtype,") +
-                        "       parent.class as parent_class, parent.type as parent_type," +
-                        "       parent.rank_address as parent_rank_address, parent.name as parent_name, " +
-                        dbutils.jsonArrayFromSelect(
-                                "address_place_id",
-                                "FROM place_addressline pa " +
-                                        " WHERE pa.place_id IN (p.place_id, coalesce(p.parent_place_id, p.place_id)) AND isaddress" +
-                                        " ORDER BY cached_rank_address DESC, pa.place_id = p.place_id DESC") + " as addresslines" +
-                        " FROM location_property_osmline p LEFT JOIN placex parent ON p.parent_place_id = parent.place_id" +
-                        " WHERE startnumber is not null AND p." + countrySQL +
+                osmlineRowMapper.getBaseQuery(dbutils, hasNewStyleInterpolation) +
+                        " AND p." + countrySQL +
                         " ORDER BY p.geometry_sector, p.parent_place_id",
                 sqlArgs, sqlArgTypes, rs -> {
                     final PhotonDoc doc = osmlineRowMapper.mapRow(rs, 0);

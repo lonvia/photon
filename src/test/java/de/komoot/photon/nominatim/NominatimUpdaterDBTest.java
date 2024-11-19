@@ -1,6 +1,9 @@
 package de.komoot.photon.nominatim;
 
+import de.komoot.photon.AssertUtil;
+import de.komoot.photon.PhotonDoc;
 import de.komoot.photon.ReflectionTestUtil;
+import de.komoot.photon.nominatim.model.AddressType;
 import de.komoot.photon.nominatim.testdb.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -116,6 +119,38 @@ class NominatimUpdaterDBTest {
         assertEquals(1, updater.numCreated());
 
         updater.assertHasCreated(place.getPlaceId());
+    }
+
+    @Test
+    void testUpdateWithAddressLowerRanks() {
+        PlacexTestRow place = PlacexTestRow.make_street("Burg").add(jdbc);
+
+        place.addAddresslines(jdbc,
+                new PlacexTestRow("place", "neighbourhood").name("Le Coin").ranks(24).add(jdbc),
+                new PlacexTestRow("place", "suburb").name("Crampton").ranks(20).add(jdbc),
+                new PlacexTestRow("place", "city").name("Grand Junction").ranks(16).add(jdbc),
+                new PlacexTestRow("place", "county").name("Lost County").ranks(12).add(jdbc),
+                new PlacexTestRow("place", "state").name("Le Havre").ranks(8).add(jdbc));
+
+        (new PhotonUpdateRow("placex", place.getPlaceId(), "UPDATE")).add(jdbc);
+
+        updater.addExisting(place.getPlaceId(), 0);
+
+        connector.update();
+        updater.assertFinishCalled();
+
+        assertEquals(0, updater.numDeleted());
+        assertEquals(1, updater.numCreated());
+
+        updater.assertHasCreated(place.getPlaceId());
+
+        PhotonDoc doc = updater.getCreated(place.getPlaceId(), 0);
+
+        AssertUtil.assertAddressName("Le Coin", doc, AddressType.LOCALITY);
+        AssertUtil.assertAddressName("Crampton", doc, AddressType.DISTRICT);
+        AssertUtil.assertAddressName("Grand Junction", doc, AddressType.CITY);
+        AssertUtil.assertAddressName("Lost County", doc, AddressType.COUNTY);
+        AssertUtil.assertAddressName("Le Havre", doc, AddressType.STATE);
     }
 
     @Test
