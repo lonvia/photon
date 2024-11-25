@@ -30,7 +30,7 @@ public class NominatimImporter extends NominatimConnector {
      * Parse every relevant row in placex and location_osmline
      * for the given country. Also imports place from county-less places.
      */
-    public void readCountry(String countryCode, ImportThread importThread) {
+    public void readCountry(String countryCode, ImportThread importThread, String[] languages) {
         // Make sure, country names are available.
         loadCountryNames();
         final var cnames = countryNames.get(countryCode);
@@ -52,7 +52,7 @@ public class NominatimImporter extends NominatimConnector {
             sqlArgTypes = new int[]{Types.VARCHAR};
         }
 
-        NominatimAddressCache addressCache = new NominatimAddressCache(dbutils);
+        NominatimAddressCache addressCache = new NominatimAddressCache(dbutils, languages);
         addressCache.loadCountryAddresses(template, countryCode);
 
         final PlaceRowMapper placeRowMapper = new PlaceRowMapper(dbutils);
@@ -107,11 +107,12 @@ public class NominatimImporter extends NominatimConnector {
 
                     final var addressPlaces = addressCache.getAddressList(rs.getString("addresslines"));
                     if (rs.getString("parent_class") != null) {
-                        addressPlaces.add(0, new AddressRow(
+                        addressPlaces.add(0, AddressRow.makeRow(
                                 dbutils.getMap(rs, "parent_name"),
                                 rs.getString("parent_class"),
                                 rs.getString("parent_type"),
-                                rs.getInt("parent_rank_address")));
+                                rs.getInt("parent_rank_address"),
+                                languages));
                     }
                     doc.completePlace(addressPlaces);
                     doc.address(address); // take precedence over computed address
@@ -134,11 +135,12 @@ public class NominatimImporter extends NominatimConnector {
 
                     final var addressPlaces = addressCache.getAddressList(rs.getString("addresslines"));
                     if (rs.getString("parent_class") != null) {
-                        addressPlaces.add(0, new AddressRow(
+                        addressPlaces.add(0, AddressRow.makeRow(
                                 dbutils.getMap(rs, "parent_name"),
                                 rs.getString("parent_class"),
                                 rs.getString("parent_type"),
-                                rs.getInt("parent_rank_address")));
+                                rs.getInt("parent_rank_address"),
+                                languages));
                     }
                     doc.completePlace(addressPlaces);
 

@@ -63,13 +63,13 @@ public class NominatimUpdater extends NominatimConnector {
     private final NominatimAddressCache addressCache;
 
 
-    public NominatimUpdater(String host, int port, String database, String username, String password) {
-        this(host, port, database, username, password, new PostgisDataAdapter());
+    public NominatimUpdater(String host, int port, String database, String username, String password, String[] languages) {
+        this(host, port, database, username, password, languages, new PostgisDataAdapter());
     }
 
-    public NominatimUpdater(String host, int port, String database, String username, String password, DBDataAdapter dataAdapter) {
+    public NominatimUpdater(String host, int port, String database, String username, String password, String[] languages, DBDataAdapter dataAdapter) {
         super(host, port, database, username, password, dataAdapter);
-        addressCache = new NominatimAddressCache(dataAdapter);
+        addressCache = new NominatimAddressCache(dataAdapter, languages);
 
         final var placeRowMapper = new PlaceRowMapper(dbutils);
         placeToNominatimResult = (rs, rowNum) -> {
@@ -80,11 +80,12 @@ public class NominatimUpdater extends NominatimConnector {
 
             final var addressPlaces = addressCache.getOrLoadAddressList(rs.getString("addresslines"), template);
             if (rs.getInt("rank_search") == 30 && rs.getString("parent_class") != null) {
-                addressPlaces.add(0, new AddressRow(
+                addressPlaces.add(0, AddressRow.makeRow(
                         dbutils.getMap(rs, "parent_name"),
                         rs.getString("parent_class"),
                         rs.getString("parent_type"),
-                        rs.getInt("parent_rank_address")));
+                        rs.getInt("parent_rank_address"),
+                        languages));
             }
             doc.completePlace(addressPlaces);
             doc.address(address); // take precedence over computed address
@@ -102,11 +103,12 @@ public class NominatimUpdater extends NominatimConnector {
 
             final var addressPlaces = addressCache.getOrLoadAddressList(rs.getString("addresslines"), template);
             if (rs.getString("parent_class") != null) {
-                addressPlaces.add(0, new AddressRow(
+                addressPlaces.add(0, AddressRow.makeRow(
                         dbutils.getMap(rs, "parent_name"),
                         rs.getString("parent_class"),
                         rs.getString("parent_type"),
-                        rs.getInt("parent_rank_address")));
+                        rs.getInt("parent_rank_address"),
+                        languages));
             }
             doc.completePlace(addressPlaces);
 

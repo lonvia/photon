@@ -110,7 +110,7 @@ public class App {
             final String filename = args.getJsonDump();
             final JsonDumper jsonDumper = new JsonDumper(filename, args.getLanguages(), args.getExtraTags());
 
-            importFromDatabase(args, jsonDumper);
+            importFromDatabase(args, jsonDumper, args.getLanguages());
             LOGGER.info("Json dump was created: {}", filename);
         } catch (FileNotFoundException e) {
             throw new UsageException("Cannot create dump: " + e.getMessage());
@@ -125,7 +125,7 @@ public class App {
         final var languages = initDatabase(args, esServer);
 
         LOGGER.info("Starting import from nominatim to photon with languages: {}", String.join(",", languages));
-        importFromDatabase(args, esServer.createImporter(languages, args.getExtraTags()));
+        importFromDatabase(args, esServer.createImporter(languages, args.getExtraTags()), languages);
 
         LOGGER.info("Imported data from nominatim to photon with languages: {}", String.join(",", languages));
     }
@@ -143,7 +143,7 @@ public class App {
         }
     }
 
-    private static void importFromDatabase(CommandLineArgs args, Importer importer) {
+    private static void importFromDatabase(CommandLineArgs args, Importer importer, String[] languages) {
         final var connector = new NominatimImporter(args.getHost(), args.getPort(), args.getDatabase(), args.getUser(), args.getPassword());
         connector.prepareDatabase();
         connector.loadCountryNames();
@@ -163,7 +163,7 @@ public class App {
 
             if (numThreads == 1) {
                 for (var country : countries) {
-                    connector.readCountry(country, importThread);
+                    connector.readCountry(country, importThread, languages);
                 }
             } else {
                 final Queue<String> todolist = new ConcurrentLinkedQueue<>(List.of(countries));
@@ -183,7 +183,7 @@ public class App {
                         String nextCc = todolist.poll();
                         while (nextCc != null) {
                             LOGGER.info("Thread {}: reading country '{}'", threadno, nextCc);
-                            threadConnector.readCountry(nextCc, importThread);
+                            threadConnector.readCountry(nextCc, importThread, languages);
                             nextCc = todolist.poll();
                         }
                     };
@@ -212,7 +212,7 @@ public class App {
 
 
     private static void startNominatimUpdateInit(CommandLineArgs args) {
-        NominatimUpdater nominatimUpdater = new NominatimUpdater(args.getHost(), args.getPort(), args.getDatabase(), args.getUser(), args.getPassword());
+        NominatimUpdater nominatimUpdater = new NominatimUpdater(args.getHost(), args.getPort(), args.getDatabase(), args.getUser(), args.getPassword(), new String[0]);
         nominatimUpdater.initUpdates(args.getNominatimUpdateInit());
     }
 
@@ -233,11 +233,11 @@ public class App {
     /**
      * Prepare Nominatim updater.
      */
-    private static NominatimUpdater setupNominatimUpdater(CommandLineArgs args, Server server)throws IOException {
+    private static NominatimUpdater setupNominatimUpdater(CommandLineArgs args, Server server) throws IOException {
         // Get database properties and ensure that the version is compatible.
         DatabaseProperties dbProperties = server.loadFromDatabase();
 
-        NominatimUpdater nominatimUpdater = new NominatimUpdater(args.getHost(), args.getPort(), args.getDatabase(), args.getUser(), args.getPassword());
+        NominatimUpdater nominatimUpdater = new NominatimUpdater(args.getHost(), args.getPort(), args.getDatabase(), args.getUser(), args.getPassword(), dbProperties.getLanguages());
         nominatimUpdater.setUpdater(server.createUpdater(dbProperties.getLanguages(), args.getExtraTags()));
         return nominatimUpdater;
     }

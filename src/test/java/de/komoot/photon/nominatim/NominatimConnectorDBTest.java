@@ -23,6 +23,7 @@ import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
 import org.springframework.transaction.support.TransactionTemplate;
 
 class NominatimConnectorDBTest {
+    private static final String[] LANGUAGES = new String[]{"de", "en", "es", "fr"};
     private EmbeddedDatabase db;
     private NominatimImporter connector;
     private CollectingImporter importer;
@@ -51,7 +52,7 @@ class NominatimConnectorDBTest {
         ImportThread importThread = new ImportThread(importer);
         try {
             for (var country: connector.getCountriesFromDatabase()) {
-                connector.readCountry(country, importThread);
+                connector.readCountry(country, importThread, LANGUAGES);
             }
         } finally {
             importThread.finish();
@@ -76,9 +77,9 @@ class NominatimConnectorDBTest {
 
         ImportThread importThread = new ImportThread(importer);
         try {
-            connector.readCountry("uk", importThread);
-            connector.readCountry("hu", importThread);
-            connector.readCountry("nl", importThread);
+            connector.readCountry("uk", importThread, LANGUAGES);
+            connector.readCountry("hu", importThread, LANGUAGES);
+            connector.readCountry("nl", importThread, LANGUAGES);
         } finally {
             importThread.finish();
         }

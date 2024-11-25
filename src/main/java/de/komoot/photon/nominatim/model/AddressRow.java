@@ -1,6 +1,7 @@
 package de.komoot.photon.nominatim.model;
 
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Representation of an address as returned by Nominatim's get_addressdata PL/pgSQL function.
@@ -11,7 +12,7 @@ public class AddressRow {
     private final String osmValue;
     private final int rankAddress;
 
-    public AddressRow(Map<String, String> name, String osmKey, String osmValue, int rankAddress) {
+    private AddressRow(Map<String, String> name, String osmKey, String osmValue, int rankAddress) {
         this.name = name;
         this.osmKey = osmKey;
         this.osmValue = osmValue;
@@ -46,5 +47,9 @@ public class AddressRow {
                 ", osmValue='" + osmValue + '\'' +
                 ", rankAddress=" + rankAddress +
                 '}';
+    }
+
+    public static AddressRow makeRow(Map<String, String> name, String osmKey, String osmValue, int rankAddress, String[] languages) {
+        return new AddressRow(name, osmKey, osmValue, rankAddress);
     }
 }

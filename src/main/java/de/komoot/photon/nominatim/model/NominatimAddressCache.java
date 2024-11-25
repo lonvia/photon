@@ -22,15 +22,16 @@ public class NominatimAddressCache {
     private final Map<Long, AddressRow> addresses = new HashMap<>();
     private final RowCallbackHandler rowMapper;
 
-    public NominatimAddressCache(DBDataAdapter dbutils) {
+    public NominatimAddressCache(DBDataAdapter dbutils, String[] languages) {
         this.rowMapper = rs ->
                 addresses.put(
                         rs.getLong("place_id"),
-                        new AddressRow(
+                        AddressRow.makeRow(
                                 Map.copyOf(dbutils.getMap(rs, "name")),
                                 rs.getString("class"),
                                 rs.getString("type"),
-                                rs.getInt("rank_address")
+                                rs.getInt("rank_address"),
+                                languages
                         ));
     }
 
@@ -49,7 +50,7 @@ public class NominatimAddressCache {
 
     public List<AddressRow> getAddressList(String addressline) {
         if (addressline == null || addressline.isBlank()) {
-            return Collections.emptyList();
+            return new ArrayList<>();
         }
 
         return makeAddressList(new JSONArray(addressline));
@@ -57,7 +58,7 @@ public class NominatimAddressCache {
 
     public List<AddressRow> getOrLoadAddressList(String addressline, JdbcTemplate template) {
         if (addressline == null || addressline.isBlank()) {
-            return Collections.emptyList();
+            return new ArrayList<>();
         }
 
         final JSONArray addressPlaces = new JSONArray(addressline);

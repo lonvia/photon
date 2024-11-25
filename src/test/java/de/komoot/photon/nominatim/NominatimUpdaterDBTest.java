@@ -17,6 +17,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import static org.junit.jupiter.api.Assertions.*;
 
 class NominatimUpdaterDBTest {
+    private static final String[] LANGUAGES = new String[]{"de", "en", "es", "fr"};
     private EmbeddedDatabase db;
     private NominatimUpdater connector;
     private CollectingUpdater updater;
@@ -32,7 +33,7 @@ class NominatimUpdaterDBTest {
                 .build();
 
 
-        connector = new NominatimUpdater(null, 0, null, null, null, new H2DataAdapter());
+        connector = new NominatimUpdater(null, 0, null, null, null, LANGUAGES, new H2DataAdapter());
         updater = new CollectingUpdater();
         connector.setUpdater(updater);
 
