@@ -1,9 +1,11 @@
 package de.komoot.photon;
 
+import de.komoot.photon.nominatim.model.AddressRow;
 import de.komoot.photon.nominatim.model.AddressType;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -12,24 +14,24 @@ class PhotonDocTest {
     @Test
     void testCompleteAddressOverwritesStreet() {
         PhotonDoc doc = simplePhotonDoc();
-        
-        HashMap<String, String> streetNames = new HashMap<>();
-        streetNames.put("name", "parent place street");
-        doc.setAddressPartIfNew(AddressType.STREET, streetNames);
 
-        HashMap<String, String> address = new HashMap<>();
-        address.put("street", "test street");
-        doc.address(address);
+        doc.completePlace(
+            List.of(AddressRow.makeRow(
+                    Map.of("name", "parent_place_street"),
+                    "highway", "residential", 26,
+                    new String[]{}))
+        );
+        doc.address(Map.of("street", "test street"));
+
         AssertUtil.assertAddressName("test street", doc, AddressType.STREET);
     }
 
     @Test
-    void testCompleteAddressCreatesStreetIfNonExistantBefore() {
+    void testCompleteAddressCreatesStreetIfNonExistentBefore() {
         PhotonDoc doc = simplePhotonDoc();
 
-        HashMap<String, String> address = new HashMap<>();
-        address.put("street", "test street");
-        doc.address(address);
+        doc.address(Map.of("street", "test street"));
+
         AssertUtil.assertAddressName("test street", doc, AddressType.STREET);
     }
 
@@ -37,7 +39,6 @@ class PhotonDocTest {
     void testAddCountryCode() {
         PhotonDoc doc = new PhotonDoc(1, "W", 2, "highway", "residential").countryCode("de");
 
-        assertNotNull(doc.getCountryCode());
         assertEquals("DE", doc.getCountryCode());
     }
 

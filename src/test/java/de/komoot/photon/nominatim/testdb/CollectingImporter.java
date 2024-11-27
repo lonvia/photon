@@ -49,7 +49,7 @@ public class CollectingImporter implements Importer {
         return null;
     }
 
-    public void assertContains(PlacexTestRow row) throws ParseException {
+    public PhotonDoc assertContains(PlacexTestRow row) throws ParseException {
         PhotonDoc doc = null;
         for (Map.Entry<Integer, PhotonDoc> outdoc : docs) {
             if (outdoc.getValue().getPlaceId() == row.getPlaceId()) {
@@ -61,6 +61,8 @@ public class CollectingImporter implements Importer {
         assertNotNull(doc, "Row not found");
 
         row.assertEquals(doc);
+
+        return doc;
     }
 
     public void assertContains(PlacexTestRow row, String housenumber) throws ParseException {

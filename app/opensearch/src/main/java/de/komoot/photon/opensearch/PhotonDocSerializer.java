@@ -6,21 +6,18 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import de.komoot.photon.Constants;
 import de.komoot.photon.PhotonDoc;
 import de.komoot.photon.Utils;
+import de.komoot.photon.nominatim.model.ContextMap;
 import org.locationtech.jts.geom.Envelope;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 public class PhotonDocSerializer extends StdSerializer<PhotonDoc> {
-    private final String[] languages;
     private final String[] extraTags;
 
-    public PhotonDocSerializer(String[] languages, String[] extraTags) {
+    public PhotonDocSerializer(String[] extraTags) {
         super(PhotonDoc.class);
-        this.languages = languages;
         this.extraTags = extraTags;
     }
 
@@ -56,18 +53,10 @@ public class PhotonDocSerializer extends StdSerializer<PhotonDoc> {
             gen.writeStringField("postcode", value.getPostcode());
         }
 
-        writeName(gen, value, languages);
+        gen.writeObjectField("name", value.getName());
 
-        for (var entry : value.getAddressParts().keySet()) {
-            Map<String, String> fNames = new HashMap<>();
-
-            value.copyAddressName(fNames, "default", entry, "name");
-
-            for (String language : languages) {
-                value.copyAddressName(fNames, language, entry, "name:" + language);
-            }
-
-            gen.writeObjectField(entry.getName(), fNames);
+        for (var entry : value.getAddressParts().entrySet()) {
+            gen.writeObjectField(entry.getKey().getName(), entry.getValue());
         }
 
         String countryCode = value.getCountryCode();
@@ -82,43 +71,10 @@ public class PhotonDocSerializer extends StdSerializer<PhotonDoc> {
         gen.writeEndObject();
     }
 
-        private void writeName(JsonGenerator gen, PhotonDoc doc, String[] languages) throws IOException {
-        Map<String, String> fNames = new HashMap<>();
-
-        doc.copyName(fNames, "default", "name");
-
-        for (String language : languages) {
-            doc.copyName(fNames, language, "name:" + language);
-        }
-
-        doc.copyName(fNames, "alt", "alt_name");
-        doc.copyName(fNames, "int", "int_name");
-        doc.copyName(fNames, "loc", "loc_name");
-        doc.copyName(fNames, "old", "old_name");
-        doc.copyName(fNames, "reg", "reg_name");
-        doc.copyName(fNames, "housename", "addr:housename");
-
-        gen.writeObjectField("name", fNames);
-    }
-
-    private void writeContext(JsonGenerator gen, Set<Map<String, String>> contexts) throws IOException {
-        final Map<String, Set<String>> multimap = new HashMap<>();
-
-        for (Map<String, String> context : contexts) {
-            if (context.get("name") != null) {
-                multimap.computeIfAbsent("default", k -> new HashSet<>()).add(context.get("name"));
-            }
-
-            for (String language : languages) {
-                if (context.get("name:" + language) != null) {
-                    multimap.computeIfAbsent("default", k -> new HashSet<>()).add(context.get("name:" + language));
-                }
-            }
-        }
-
-        if (!multimap.isEmpty()) {
+    private void writeContext(JsonGenerator gen, ContextMap context) throws IOException {
+        if (!context.isEmpty()) {
             gen.writeObjectFieldStart("context");
-            for (Map.Entry<String, Set<String>> entry : multimap.entrySet()) {
+            for (Map.Entry<String, Set<String>> entry : context.entrySet()) {
                 gen.writeStringField(entry.getKey(), String.join(", ", entry.getValue()));
             }
             gen.writeEndObject();

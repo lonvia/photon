@@ -27,7 +27,7 @@ public class NominatimAddressCache {
                 addresses.put(
                         rs.getLong("place_id"),
                         AddressRow.makeRow(
-                                Map.copyOf(dbutils.getMap(rs, "name")),
+                                dbutils.getMap(rs, "name"),
                                 rs.getString("class"),
                                 rs.getString("type"),
                                 rs.getInt("rank_address"),
@@ -66,8 +66,8 @@ public class NominatimAddressCache {
         // Find any missing places.
         final List<Long> missing = new ArrayList<>();
         for (int i = 0; i < addressPlaces.length(); ++i) {
-            final Long placeId = addressPlaces.optLong(i);
-            if (placeId != null && !addresses.containsKey(placeId)) {
+            final long placeId = addressPlaces.optLong(i);
+            if (placeId > 0 && !addresses.containsKey(placeId)) {
                 missing.add(placeId);
             }
         }
@@ -84,8 +84,8 @@ public class NominatimAddressCache {
         final ArrayList<AddressRow> outlist = new ArrayList<>();
 
         for (int i = 0; i < addressPlaces.length(); ++i) {
-            final Long placeId = addressPlaces.optLong(i);
-            if (placeId != null) {
+            final long placeId = addressPlaces.optLong(i);
+            if (placeId > 0) {
                 final AddressRow row = addresses.get(placeId);
                 if (row != null) {
                     outlist.add(row);

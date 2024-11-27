@@ -52,6 +52,7 @@ public class NominatimUpdater extends NominatimConnector {
     private final RowMapper<NominatimResult> osmlineToNominatimResult;
     private final String osmlineRowSql;
     private final RowMapper<NominatimResult> placeToNominatimResult;
+    private final String[] languages;
 
 
     /**
@@ -70,8 +71,9 @@ public class NominatimUpdater extends NominatimConnector {
     public NominatimUpdater(String host, int port, String database, String username, String password, String[] languages, DBDataAdapter dataAdapter) {
         super(host, port, database, username, password, dataAdapter);
         addressCache = new NominatimAddressCache(dataAdapter, languages);
+        this.languages = languages;
 
-        final var placeRowMapper = new PlaceRowMapper(dbutils);
+        final var placeRowMapper = new PlaceRowMapper(dbutils, languages);
         placeToNominatimResult = (rs, rowNum) -> {
             PhotonDoc doc = placeRowMapper.mapRow(rs, rowNum);
             final Map<String, String> address = dbutils.getMap(rs, "address");
@@ -100,6 +102,7 @@ public class NominatimUpdater extends NominatimConnector {
         osmlineRowSql = osmlineRowMapper.getBaseQuery(dataAdapter, hasNewStyleInterpolation);
         osmlineToNominatimResult = (rs, rownum) -> {
             final PhotonDoc doc = osmlineRowMapper.mapRow(rs, 0);
+            assert doc != null;
 
             final var addressPlaces = addressCache.getOrLoadAddressList(rs.getString("addresslines"), template);
             if (rs.getString("parent_class") != null) {
@@ -156,7 +159,7 @@ public class NominatimUpdater extends NominatimConnector {
     public void update() {
         if (updateLock.tryLock()) {
             try {
-                loadCountryNames();
+                loadCountryNames(languages);
                 updateFromPlacex();
                 updateFromInterpolations();
                 updater.finish();

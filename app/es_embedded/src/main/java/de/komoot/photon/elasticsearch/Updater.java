@@ -16,13 +16,11 @@ public class Updater implements de.komoot.photon.Updater {
 
     private final Client esClient;
     private BulkRequestBuilder bulkRequest;
-    private final String[] languages;
     private final String[] extraTags;
 
-    public Updater(Client esClient, String[] languages, String[] extraTags) {
+    public Updater(Client esClient, String[] extraTags) {
         this.esClient = esClient;
         this.bulkRequest = esClient.prepareBulk();
-        this.languages = languages;
         this.extraTags = extraTags;
     }
 
@@ -35,7 +33,8 @@ public class Updater implements de.komoot.photon.Updater {
     public void create(PhotonDoc doc, int objectId) {
         String uid = doc.getUid(objectId);
         try {
-            bulkRequest.add(esClient.prepareIndex(PhotonIndex.NAME, PhotonIndex.TYPE).setSource(PhotonDocConverter.convert(doc, languages, extraTags)).setId(uid));
+            bulkRequest.add(esClient.prepareIndex(PhotonIndex.NAME, PhotonIndex.TYPE)
+                    .setSource(PhotonDocConverter.convert(doc, extraTags)).setId(uid));
         } catch (IOException e) {
             LOGGER.error("Creation of new doc {} failed", uid, e);
         }

@@ -14,12 +14,10 @@ public class JsonDumper implements Importer {
     private static final Logger LOGGER = org.slf4j.LoggerFactory.getLogger(JsonDumper.class);
 
     private PrintWriter writer;
-    private final String[] languages;
     private final String[] extraTags;
 
-    public JsonDumper(String filename, String[] languages, String[] extraTags) throws FileNotFoundException {
+    public JsonDumper(String filename, String[] extraTags) throws FileNotFoundException {
         this.writer = new PrintWriter(filename);
-        this.languages = languages;
         this.extraTags = extraTags;
     }
 
@@ -27,7 +25,7 @@ public class JsonDumper implements Importer {
     public void add(PhotonDoc doc, int objectId) {
         try {
             writer.println("{\"index\": {}}");
-            writer.println(PhotonDocConverter.convert(doc, languages, extraTags).string());
+            writer.println(PhotonDocConverter.convert(doc, extraTags).string());
         } catch (IOException e) {
             LOGGER.error("Error writing json file", e);
         }

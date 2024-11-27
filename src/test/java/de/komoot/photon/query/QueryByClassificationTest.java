@@ -11,7 +11,6 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,7 +28,8 @@ class QueryByClassificationTest extends ESBaseTester {
 
     private PhotonDoc createDoc(String key, String value, String name) {
         ++testDocId;
-        return new PhotonDoc(testDocId, "W", testDocId, key, value).names(Collections.singletonMap("name", name));
+        return new PhotonDoc(testDocId, "W", testDocId, key, value)
+                .names(makeName("name", name));
     }
 
     private List<PhotonResult> search(String query) {

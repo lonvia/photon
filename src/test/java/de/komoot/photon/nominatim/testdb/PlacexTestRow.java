@@ -140,7 +140,10 @@ public class PlacexTestRow {
         Assertions.assertEquals(value, doc.getTagValue());
         Assertions.assertEquals(rankAddress, (Integer) doc.getRankAddress());
         Assertions.assertEquals(new WKTReader().read(centroid), doc.getCentroid());
-        Assertions.assertEquals(names, doc.getName());
+        // Only check for default name, if exists.
+        if (names.containsKey("name")) {
+            Assertions.assertEquals(names.get("name"), doc.getName().get("default"));
+        }
     }
 
     public Long getPlaceId() {

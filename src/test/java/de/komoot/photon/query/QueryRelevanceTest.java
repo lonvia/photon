@@ -11,9 +11,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -29,13 +27,8 @@ class QueryRelevanceTest extends ESBaseTester {
     }
 
     private PhotonDoc createDoc(String key, String value, long id, String... names) {
-        Map<String, String> nameMap = new HashMap<>();
-
-        for (int i = 0; i < names.length - 1; i += 2) {
-            nameMap.put(names[i], names[i+1]);
-        }
-
-        return new PhotonDoc(id, "N", id, key, value).names(nameMap);
+        return new PhotonDoc(id, "N", id, key, value)
+                .names(makeName(names));
     }
 
     private List<PhotonResult> search(String query) {

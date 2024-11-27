@@ -3,11 +3,10 @@ package de.komoot.photon.query;
 import de.komoot.photon.ESBaseTester;
 import de.komoot.photon.PhotonDoc;
 import de.komoot.photon.Importer;
-import de.komoot.photon.nominatim.model.AddressType;
+import de.komoot.photon.nominatim.model.AddressRow;
 import de.komoot.photon.searcher.PhotonResult;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -26,18 +25,13 @@ class QueryByLanguageTest extends ESBaseTester {
     private Importer setup(String... languages) throws IOException {
         languageList = languages;
         setUpES(dataDirectory, languages);
-        return makeImporterWithLanguages(languages);
+        return makeImporter();
     }
 
     private PhotonDoc createDoc(String... names) {
-        Map<String, String> nameMap = new HashMap<>();
-
-        for (int i = 0; i < names.length - 1; i += 2) {
-            nameMap.put(names[i], names[i+1]);
-        }
-
         ++testDocId;
-        return new PhotonDoc(testDocId, "W", testDocId, "place", "city").names(nameMap);
+        return new PhotonDoc(testDocId, "W", testDocId, "place", "city")
+                .names(makeName(names));
     }
 
     private List<PhotonResult> search(String query, String lang) {
@@ -77,18 +71,16 @@ class QueryByLanguageTest extends ESBaseTester {
     }
 
     @ParameterizedTest
-    @EnumSource(names = {"STREET", "LOCALITY", "DISTRICT", "CITY", "COUNTRY", "STATE"})
-    void queryAddressPartsLanguages(AddressType addressType) throws IOException {
+    @ValueSource(ints = {26, 22, 17, 13, 10, 5})
+    void queryAddressPartsLanguages(int rank) throws IOException {
         Importer instance = setup("en", "de");
 
-        Map<String, String> addressNames = new HashMap<>();
-        addressNames.put("name", "original");
-        addressNames.put("name:de", "Deutsch");
-
         PhotonDoc doc = new PhotonDoc(45, "N", 3, "place", "house")
-                .names(Collections.singletonMap("name", "here"));
+                .names(makeName("name", "here"));
 
-        doc.setAddressPartIfNew(addressType, addressNames);
+        doc.completePlace(List.of(AddressRow.makeRow(
+                Map.of("name", "original", "name:de", "Deutsch"),
+                "highway", "unclassified", rank, new String[]{"en", "de"})));
 
         instance.add(doc, 0);
         instance.finish();

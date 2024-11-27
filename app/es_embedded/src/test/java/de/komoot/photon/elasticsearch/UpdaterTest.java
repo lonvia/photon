@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -18,9 +17,8 @@ class UpdaterTest extends ESBaseTester {
 
     @Test
     void addNameToDoc() throws IOException {
-        Map<String, String> names = new HashMap<>();
-        names.put("name", "Foo");
-        PhotonDoc doc = new PhotonDoc(1234, "N", 1000, "place", "city").names(names);
+        PhotonDoc doc = new PhotonDoc(1234, "N", 1000, "place", "city")
+                .names(makeName("name", "Foo"));
 
         setUpES();
         Importer instance = makeImporter();
@@ -28,7 +26,7 @@ class UpdaterTest extends ESBaseTester {
         instance.finish();
         refresh();
 
-        names.put("name:en", "Enfoo");
+        doc.names(makeName("name", "Foo", "name:en", "Enfoo"));
         Updater updater = makeUpdater();
         updater.create(doc, 0);
         updater.finish();
@@ -44,10 +42,8 @@ class UpdaterTest extends ESBaseTester {
 
     @Test
     void removeNameFromDoc() throws IOException {
-        Map<String, String> names = new HashMap<>();
-        names.put("name", "Foo");
-        names.put("name:en", "Enfoo");
-        PhotonDoc doc = new PhotonDoc(1234, "N", 1000, "place", "city").names(names);
+        PhotonDoc doc = new PhotonDoc(1234, "N", 1000, "place", "city")
+                .names(makeName("name", "Foo", "name:en", "Enfoo"));
 
         setUpES();
         Importer instance = makeImporter();
@@ -55,7 +51,7 @@ class UpdaterTest extends ESBaseTester {
         instance.finish();
         refresh();
 
-        names.remove("name");
+        doc.names(makeName("name:en", "Enfoo"));
         Updater updater = makeUpdater();
         updater.create(doc, 0);
         updater.finish();
@@ -71,9 +67,8 @@ class UpdaterTest extends ESBaseTester {
 
     @Test
     void addExtraTagsToDoc() throws IOException {
-        Map<String, String> names = new HashMap<>();
-        names.put("name", "Foo");
-        PhotonDoc doc = new PhotonDoc(1234, "N", 1000, "place", "city").names(names);
+        PhotonDoc doc = new PhotonDoc(1234, "N", 1000, "place", "city")
+                .names(makeName("name", "Foo"));
 
         setUpES();
         Importer instance = makeImporterWithExtra("website");

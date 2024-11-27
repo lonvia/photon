@@ -6,7 +6,7 @@ import java.io.FileNotFoundException;
 
 public class JsonDumper implements Importer {
 
-    public JsonDumper(String filename, String[] languages, String[] extraTags) throws FileNotFoundException {
+    public JsonDumper(String filename, String[] extraTags) throws FileNotFoundException {
         throw new NotImplementedException();
     }
 

@@ -166,13 +166,13 @@ public class Server {
                                       dbEntry.source().supportStructuredQueries);
     }
 
-    public Importer createImporter(String[] languages, String[] extraTags) {
-        registerPhotonDocSerializer(languages, extraTags);
+    public Importer createImporter(String[] extraTags) {
+        registerPhotonDocSerializer(extraTags);
         return new de.komoot.photon.opensearch.Importer(client);
     }
 
-    public Updater createUpdater(String[] languages, String[] extraTags) {
-        registerPhotonDocSerializer(languages, extraTags);
+    public Updater createUpdater(String[] extraTags) {
+        registerPhotonDocSerializer(extraTags);
         return new de.komoot.photon.opensearch.Updater(client);
     }
 
@@ -188,10 +188,10 @@ public class Server {
         return new OpenSearchReverseHandler(client, queryTimeoutSec);
     }
 
-    private void registerPhotonDocSerializer(String[] languages, String[] extraTags) {
+    private void registerPhotonDocSerializer(String[] extraTags) {
         final var module = new SimpleModule("PhotonDocSerializer",
                 new Version(1, 0, 0, null, null, null));
-        module.addSerializer(PhotonDoc.class, new PhotonDocSerializer(languages, extraTags));
+        module.addSerializer(PhotonDoc.class, new PhotonDocSerializer(extraTags));
 
         ((JacksonJsonpMapper) client._transport().jsonpMapper()).objectMapper().registerModule(module);
     }

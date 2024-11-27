@@ -283,12 +283,12 @@ public class Server {
                                       false);
     }
 
-    public Importer createImporter(String[] languages, String[] extraTags) {
-        return new de.komoot.photon.elasticsearch.Importer(esClient, languages, extraTags);
+    public Importer createImporter(String[] extraTags) {
+        return new de.komoot.photon.elasticsearch.Importer(esClient, extraTags);
     }
 
-    public Updater createUpdater(String[] languages, String[] extraTags) {
-        return new de.komoot.photon.elasticsearch.Updater(esClient, languages, extraTags);
+    public Updater createUpdater(String[] extraTags) {
+        return new de.komoot.photon.elasticsearch.Updater(esClient, extraTags);
     }
 
     public SearchHandler createSearchHandler(String[] languages, int queryTimeoutSec) {

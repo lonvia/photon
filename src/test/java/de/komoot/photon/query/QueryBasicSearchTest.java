@@ -8,7 +8,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,14 +27,9 @@ class QueryBasicSearchTest extends ESBaseTester {
     }
 
     private PhotonDoc createDoc(String... names) {
-        Map<String, String> nameMap = new HashMap<>();
-
-        for (int i = 0; i < names.length - 1; i += 2) {
-            nameMap.put(names[i], names[i+1]);
-        }
-
         ++testDocId;
-        return new PhotonDoc(testDocId, "N", testDocId, "place", "city").names(nameMap);
+        return new PhotonDoc(testDocId, "N", testDocId, "place", "city")
+                .names(makeName(names));
     }
 
     private List<PhotonResult> search(String query) {
@@ -124,7 +118,7 @@ class QueryBasicSearchTest extends ESBaseTester {
     @Test
     void testSearchMustContainANameTerm() throws IOException {
         Importer instance = makeImporter();
-        instance.add(createDoc("name", "Palermo").address(Collections.singletonMap("state", "Sicilia")), 0);
+        instance.add(createDoc("name", "Palermo").address(Map.of("state", "Sicilia")), 0);
         instance.finish();
         refresh();
 
@@ -141,7 +135,7 @@ class QueryBasicSearchTest extends ESBaseTester {
     @Test
     void testSearchWithHousenumberNamed() throws IOException {
         Importer instance = makeImporter();
-        instance.add(createDoc("name", "Edeka").houseNumber("5").address(Collections.singletonMap("street", "Hauptstrasse")), 0);
+        instance.add(createDoc("name", "Edeka").houseNumber("5").address(Map.of("street", "Hauptstrasse")), 0);
         instance.finish();
         refresh();
 
@@ -156,7 +150,7 @@ class QueryBasicSearchTest extends ESBaseTester {
     @Test
     void testSearchWithHousenumberUnnamed() throws IOException {
         Importer instance = makeImporter();
-        instance.add(createDoc().houseNumber("5").address(Collections.singletonMap("street", "Hauptstrasse")), 0);
+        instance.add(createDoc().houseNumber("5").address(Map.of("street", "Hauptstrasse")), 0);
         instance.finish();
         refresh();
 

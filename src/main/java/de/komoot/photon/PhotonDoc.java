@@ -1,6 +1,8 @@
 package de.komoot.photon;
 
 import de.komoot.photon.nominatim.model.AddressRow;
+import de.komoot.photon.nominatim.model.ContextMap;
+import de.komoot.photon.nominatim.model.NameMap;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Point;
@@ -21,7 +23,7 @@ public class PhotonDoc {
     private String tagKey;
     private String tagValue;
 
-    private Map<String, String> name = Collections.emptyMap();
+    private NameMap name = new NameMap();
     private String postcode = null;
     private Map<String, String> extratags = Collections.emptyMap();
     private Envelope bbox = null;
@@ -31,8 +33,8 @@ public class PhotonDoc {
     private long linkedPlaceId = 0; // 0 if unset
     private int rankAddress = 30;
 
-    private Map<AddressType, Map<String, String>> addressParts = new EnumMap<>(AddressType.class);
-    private Set<Map<String, String>> context = new HashSet<>();
+    private Map<AddressType, NameMap> addressParts = new EnumMap<>(AddressType.class);
+    private ContextMap context = new ContextMap();
     private String houseNumber = null;
     private Point centroid = null;
 
@@ -65,7 +67,7 @@ public class PhotonDoc {
         this.context = other.context;
     }
 
-    public PhotonDoc names(Map<String, String> names) {
+    public PhotonDoc names(NameMap names) {
         this.name = names;
         return this;
     }
@@ -114,9 +116,9 @@ public class PhotonDoc {
     }
 
     public PhotonDoc extraTags(Map<String, String> extratags) {
-        this.extratags = extratags;
-
         if (extratags != null) {
+            this.extratags = extratags;
+
             String place = extratags.get("place");
             if (place == null) {
                 place = extratags.get("linked_place");
@@ -168,32 +170,6 @@ public class PhotonDoc {
         return String.format("%d.%d", placeId, objectId);
     }
 
-    public void copyName(Map<String, String> target, String targetField, String nameField) {
-        String outname = name.get("_place_" + nameField);
-        if (outname == null) {
-            outname = name.get(nameField);
-        }
-
-        if (outname != null) {
-            target.put(targetField, outname);
-        }
-    }
-
-    public void copyAddressName(Map<String, String> target, String targetField, AddressType addressType, String nameField) {
-        Map<String, String> names = addressParts.get(addressType);
-
-        if (names != null) {
-            String outname = names.get("_place_" + nameField);
-            if (outname == null) {
-                outname = names.get(nameField);
-            }
-
-            if (outname != null) {
-                target.put(targetField, outname);
-            }
-        }
-    }
-
     public AddressType getAddressType() {
         return AddressType.fromRank(rankAddress);
     }
@@ -211,34 +187,24 @@ public class PhotonDoc {
      *
      * @param addressType The type of address field to fill.
      * @param addressFieldName The name of the address tag to use (without the 'addr:' prefix).
-     *
-     * @return 'existingField' potentially with the name field replaced. If existingField was null and
-     *         the address field could be found, then a new map with the address as single entry is returned.
      */
     private void extractAddress(Map<String, String> address, AddressType addressType, String addressFieldName) {
-        String field = address.get(addressFieldName);
+        final String field = address.get(addressFieldName);
 
         if (field == null) {
             return;
         }
 
-        Map<String, String> map = addressParts.get(addressType);
+        var map = addressParts.get(addressType);
         if (map == null) {
-            map = new HashMap<>();
-            map.put("name", field);
-            addressParts.put(addressType, map);
+            addressParts.put(addressType, NameMap.makeAddressNames(Map.of("name", field), new String[]{}));
         } else {
-            String existingName = map.get("name");
+            final String existingName = map.get("name");
             if (!field.equals(existingName)) {
-                // Make a copy of the original name map because the map is reused for other addresses.
-                map = new HashMap<>(map);
                 LOGGER.debug("Replacing {} name '{}' with '{}' for osmId #{}", addressFieldName, existingName, field, osmId);
                 // we keep the former name in the context as it might be helpful when looking up typos
-                if (!Objects.isNull(existingName)) {
-                    context.add(Collections.singletonMap("formerName", existingName));
-                }
-                map.put("name", field);
-                addressParts.put(addressType, map);
+                context.addName("default", existingName);
+                addressParts.put(addressType, map.copyWithReplacement("default", field));
             }
         }
     }
@@ -248,7 +214,7 @@ public class PhotonDoc {
      *
      * @return True, if the address was inserted.
      */
-    public boolean setAddressPartIfNew(AddressType addressType, Map<String, String> names) {
+    private boolean setAddressPartIfNew(AddressType addressType, NameMap names) {
         return addressParts.computeIfAbsent(addressType, k -> names) == names;
     }
 
@@ -264,12 +230,13 @@ public class PhotonDoc {
                     && (atype == doctype || !setAddressPartIfNew(atype, address.getName()))
                     && address.isUsefulForContext()) {
                 // no specifically handled item, check if useful for context
-                getContext().add(address.getName());
+                context.addFromMap(address.getName());
             }
+            context.addFromMap(address.getContext());
         }
     }
 
-    public void setCountry(Map<String, String> names) {
+    public void setCountry(NameMap names) {
         addressParts.put(AddressType.COUNTRY, names);
     }
 
@@ -325,11 +292,11 @@ public class PhotonDoc {
         return this.rankAddress;
     }
 
-    public Map<AddressType, Map<String, String>> getAddressParts() {
+    public Map<AddressType, NameMap> getAddressParts() {
         return this.addressParts;
     }
 
-    public Set<Map<String, String>> getContext() {
+    public ContextMap getContext() {
         return this.context;
     }
 

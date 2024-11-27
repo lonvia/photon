@@ -3,20 +3,19 @@ package de.komoot.photon.elasticsearch;
 import de.komoot.photon.Constants;
 import de.komoot.photon.PhotonDoc;
 import de.komoot.photon.nominatim.model.AddressType;
+import de.komoot.photon.nominatim.model.ContextMap;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.locationtech.jts.geom.Envelope;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 import static de.komoot.photon.Utils.buildClassificationString;
 
 public class PhotonDocConverter {
-    public static XContentBuilder convert(PhotonDoc doc, String[] languages, String[] extraTags) throws IOException {
+    public static XContentBuilder convert(PhotonDoc doc, String[] extraTags) throws IOException {
         final AddressType atype = doc.getAddressType();
         XContentBuilder builder = XContentFactory.jsonBuilder().startObject()
                 .field(Constants.OSM_ID, doc.getOsmId())
@@ -46,24 +45,16 @@ public class PhotonDocConverter {
             builder.field("postcode", doc.getPostcode());
         }
 
-        writeName(builder, doc, languages);
+        write(builder, doc.getName(), "name");
 
-        for (AddressType entry : doc.getAddressParts().keySet()) {
-            Map<String, String> fNames = new HashMap<>();
-
-            doc.copyAddressName(fNames, "default", entry, "name");
-
-            for (String language : languages) {
-                doc.copyAddressName(fNames, language, entry, "name:" + language);
-            }
-
-            write(builder, fNames, entry.getName());
+        for (var entry : doc.getAddressParts().entrySet()) {
+            write(builder, entry.getValue(), entry.getKey().getName());
         }
 
         String countryCode = doc.getCountryCode();
         if (countryCode != null)
             builder.field(Constants.COUNTRYCODE, countryCode);
-        writeContext(builder, doc.getContext(), languages);
+        writeContext(builder, doc.getContext());
         writeExtraTags(builder, doc.getExtratags(), extraTags);
         writeExtent(builder, doc.getBbox());
 
@@ -109,25 +100,6 @@ public class PhotonDocConverter {
         builder.endObject();
     }
 
-    private static void writeName(XContentBuilder builder, PhotonDoc doc, String[] languages) throws IOException {
-        Map<String, String> fNames = new HashMap<>();
-
-        doc.copyName(fNames, "default", "name");
-
-        for (String language : languages) {
-            doc.copyName(fNames, language, "name:" + language);
-        }
-
-        doc.copyName(fNames, "alt", "alt_name");
-        doc.copyName(fNames, "int", "int_name");
-        doc.copyName(fNames, "loc", "loc_name");
-        doc.copyName(fNames, "old", "old_name");
-        doc.copyName(fNames, "reg", "reg_name");
-        doc.copyName(fNames, "housename", "addr:housename");
-
-        write(builder, fNames, "name");
-    }
-
     private static void write(XContentBuilder builder, Map<String, String> fNames, String name) throws IOException {
         if (fNames.isEmpty()) return;
 
@@ -138,24 +110,10 @@ public class PhotonDocConverter {
         builder.endObject();
     }
 
-    protected static void writeContext(XContentBuilder builder, Set<Map<String, String>> contexts, String[] languages) throws IOException {
-        final Map<String, Set<String>> multimap = new HashMap<>();
-
-        for (Map<String, String> context : contexts) {
-            if (context.get("name") != null) {
-                multimap.computeIfAbsent("default", k -> new HashSet<>()).add(context.get("name"));
-            }
-
-            for (String language : languages) {
-                if (context.get("name:" + language) != null) {
-                    multimap.computeIfAbsent("default", k -> new HashSet<>()).add(context.get("name:" + language));
-                }
-            }
-        }
-
-        if (!multimap.isEmpty()) {
+    protected static void writeContext(XContentBuilder builder, ContextMap context) throws IOException {
+        if (!context.isEmpty()) {
             builder.startObject("context");
-            for (Map.Entry<String, Set<String>> entry : multimap.entrySet()) {
+            for (Map.Entry<String, Set<String>> entry : context.entrySet()) {
                 builder.field(entry.getKey(), String.join(", ", entry.getValue()));
             }
             builder.endObject();

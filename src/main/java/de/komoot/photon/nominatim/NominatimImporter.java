@@ -32,7 +32,7 @@ public class NominatimImporter extends NominatimConnector {
      */
     public void readCountry(String countryCode, ImportThread importThread, String[] languages) {
         // Make sure, country names are available.
-        loadCountryNames();
+        loadCountryNames(languages);
         final var cnames = countryNames.get(countryCode);
         if (cnames == null) {
             LOGGER.warn("Unknown country code {}. Skipping.", countryCode);
@@ -55,7 +55,7 @@ public class NominatimImporter extends NominatimConnector {
         NominatimAddressCache addressCache = new NominatimAddressCache(dbutils, languages);
         addressCache.loadCountryAddresses(template, countryCode);
 
-        final PlaceRowMapper placeRowMapper = new PlaceRowMapper(dbutils);
+        final PlaceRowMapper placeRowMapper = new PlaceRowMapper(dbutils, languages);
         // First read ranks below 30, independent places
         template.query(
                 PlaceRowMapper.SQL_SELECT +
@@ -132,6 +132,7 @@ public class NominatimImporter extends NominatimConnector {
                         " ORDER BY p.geometry_sector, p.parent_place_id",
                 sqlArgs, sqlArgTypes, rs -> {
                     final PhotonDoc doc = osmlineRowMapper.mapRow(rs, 0);
+                    assert doc != null;
 
                     final var addressPlaces = addressCache.getAddressList(rs.getString("addresslines"));
                     if (rs.getString("parent_class") != null) {
@@ -187,8 +188,8 @@ public class NominatimImporter extends NominatimConnector {
         });
     }
 
-    public String[] getCountriesFromDatabase() {
-        loadCountryNames();
+    public String[] getCountriesFromDatabase(String[] languages) {
+        loadCountryNames(languages);
 
         return countryNames.keySet().toArray(new String[0]);
     }

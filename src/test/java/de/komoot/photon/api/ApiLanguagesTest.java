@@ -1,7 +1,6 @@
 package de.komoot.photon.api;
 
 import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Point;
 
 import de.komoot.photon.App;
 import de.komoot.photon.ESBaseTester;
@@ -33,23 +32,14 @@ class ApiLanguagesTest extends ESBaseTester {
     }
 
     protected PhotonDoc createDoc(int id, String key, String value, String... names) {
-        Point location = FACTORY.createPoint(new Coordinate(1.0, 2.34));
-        PhotonDoc doc = new PhotonDoc(id, "W", id, key, value).centroid(location);
-
-        Map<String, String> nameMap = new HashMap<>();
-
-        for (int i = 0; i < names.length - 1; i += 2) {
-            nameMap.put(names[i], names[i + 1]);
-        }
-
-        doc.names(nameMap);
-
-        return doc;
+        return new PhotonDoc(id, "W", id, key, value)
+                .centroid(FACTORY.createPoint(new Coordinate(1.0, 2.34)))
+                .names(makeName(names));
     }
 
     private void importPlaces(String... languages) throws Exception {
         setUpES(dataDirectory, languages);
-        Importer instance = makeImporterWithLanguages(languages);
+        Importer instance = makeImporter();
         instance.add(createDoc(1000, "place", "city",
                 "name:en", "thething", "name:fr", "letruc", "name:ch", "dasding"), 0);
         instance.add(createDoc(1001, "place", "town",

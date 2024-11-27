@@ -13,7 +13,6 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -41,7 +40,8 @@ class QueryFilterLayerTest extends ESBaseTester {
     }
 
     private PhotonDoc createDoc(int id, int rank) {
-        return new PhotonDoc(id, "W", id, "place", "value").names(Collections.singletonMap("name", "berlin")).rankAddress(rank);
+        return new PhotonDoc(id, "W", id, "place", "value")
+                .names(makeName("name", "berlin")).rankAddress(rank);
     }
 
     @Test

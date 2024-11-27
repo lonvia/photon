@@ -20,9 +20,11 @@ public class PlaceRowMapper implements RowMapper<PhotonDoc> {
             "       p.linked_place_id, p.rank_address, p.rank_search, p.importance, p.country_code, p.centroid,";
 
     private final DBDataAdapter dbutils;
+    private final String[] languages;
 
-    public PlaceRowMapper(DBDataAdapter dbutils) {
+    public PlaceRowMapper(DBDataAdapter dbutils, String[] languages) {
         this.dbutils = dbutils;
+        this.languages = languages;
     }
 
     @Override
@@ -30,7 +32,7 @@ public class PlaceRowMapper implements RowMapper<PhotonDoc> {
         PhotonDoc doc = new PhotonDoc(rs.getLong("place_id"),
                 rs.getString("osm_type"), rs.getLong("osm_id"),
                 rs.getString("class"), rs.getString("type"))
-                .names(dbutils.getMap(rs, "name"))
+                .names(NameMap.makePlaceNames(dbutils.getMap(rs, "name"), languages))
                 .extraTags(dbutils.getMap(rs, "extratags"))
                 .bbox(dbutils.extractGeometry(rs, "bbox"))
                 .parentPlaceId(rs.getLong("parent_place_id"))

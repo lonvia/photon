@@ -108,7 +108,7 @@ public class App {
     private static void startJsonDump(CommandLineArgs args) {
         try {
             final String filename = args.getJsonDump();
-            final JsonDumper jsonDumper = new JsonDumper(filename, args.getLanguages(), args.getExtraTags());
+            final JsonDumper jsonDumper = new JsonDumper(filename, args.getExtraTags());
 
             importFromDatabase(args, jsonDumper, args.getLanguages());
             LOGGER.info("Json dump was created: {}", filename);
@@ -125,7 +125,7 @@ public class App {
         final var languages = initDatabase(args, esServer);
 
         LOGGER.info("Starting import from nominatim to photon with languages: {}", String.join(",", languages));
-        importFromDatabase(args, esServer.createImporter(languages, args.getExtraTags()), languages);
+        importFromDatabase(args, esServer.createImporter(args.getExtraTags()), languages);
 
         LOGGER.info("Imported data from nominatim to photon with languages: {}", String.join(",", languages));
     }
@@ -146,21 +146,20 @@ public class App {
     private static void importFromDatabase(CommandLineArgs args, Importer importer, String[] languages) {
         final var connector = new NominatimImporter(args.getHost(), args.getPort(), args.getDatabase(), args.getUser(), args.getPassword());
         connector.prepareDatabase();
-        connector.loadCountryNames();
+        connector.loadCountryNames(languages);
 
         String[] countries = args.getCountryCodes();
 
         if (countries == null || countries.length == 0) {
-            countries = connector.getCountriesFromDatabase();
+            countries = connector.getCountriesFromDatabase(languages);
         } else {
             countries = Arrays.stream(countries).map(String::trim).filter(s -> !s.isBlank()).toArray(String[]::new);
         }
 
         final int numThreads = args.getThreads();
-        ImportThread importThread = new ImportThread(importer);
+        final ImportThread importThread = new ImportThread(importer);
 
         try {
-
             if (numThreads == 1) {
                 for (var country : countries) {
                     connector.readCountry(country, importThread, languages);
@@ -174,7 +173,7 @@ public class App {
                     final NominatimImporter threadConnector;
                     if (i > 0) {
                         threadConnector = new NominatimImporter(args.getHost(), args.getPort(), args.getDatabase(), args.getUser(), args.getPassword());
-                        threadConnector.loadCountryNames();
+                        threadConnector.loadCountryNames(languages);
                     } else {
                         threadConnector = connector;
                     }
@@ -238,14 +237,14 @@ public class App {
         DatabaseProperties dbProperties = server.loadFromDatabase();
 
         NominatimUpdater nominatimUpdater = new NominatimUpdater(args.getHost(), args.getPort(), args.getDatabase(), args.getUser(), args.getPassword(), dbProperties.getLanguages());
-        nominatimUpdater.setUpdater(server.createUpdater(dbProperties.getLanguages(), args.getExtraTags()));
+        nominatimUpdater.setUpdater(server.createUpdater(args.getExtraTags()));
         return nominatimUpdater;
     }
 
     /**
      * Start API server to accept search requests via http.
      */
-    private static void startApi(CommandLineArgs args, Server server) throws IOException {
+    private static void startApi(CommandLineArgs args, Server server)throws IOException {
         // Get database properties and ensure that the version is compatible.
         DatabaseProperties dbProperties = server.loadFromDatabase();
         if (args.getLanguages(false).length > 0) {

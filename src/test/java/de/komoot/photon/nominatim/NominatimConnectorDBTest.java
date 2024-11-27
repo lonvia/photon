@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Date;
+import java.util.Map;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -51,7 +52,7 @@ class NominatimConnectorDBTest {
     private void readEntireDatabase() {
         ImportThread importThread = new ImportThread(importer);
         try {
-            for (var country: connector.getCountriesFromDatabase()) {
+            for (var country: connector.getCountriesFromDatabase(LANGUAGES)) {
                 connector.readCountry(country, importThread, LANGUAGES);
             }
         } finally {
@@ -67,6 +68,22 @@ class NominatimConnectorDBTest {
 
         assertEquals(1, importer.size());
         importer.assertContains(place);
+    }
+
+    @Test
+    void testNameImport() throws ParseException {
+        var place = new PlacexTestRow("amenity", "cafe")
+                .name("Spot")
+                .name("name:pl", "Pspot")
+                .name("name:de", "Platz")
+                .name("_place_name:de", "Der Platz")
+                .name("ref", "453")
+                .add(jdbc);
+        readEntireDatabase();
+
+        assertEquals(1, importer.size());
+        var doc = importer.assertContains(place);
+        assertEquals(Map.of("default", "Spot", "de", "Der Platz"), doc.getName());
     }
 
     @Test
@@ -243,7 +260,7 @@ class NominatimConnectorDBTest {
         PhotonDoc doc = importer.get(place);
 
         AssertUtil.assertAddressName("Dorf", doc, AddressType.CITY);
-        assertTrue(doc.getContext().contains(munip.getNames()));
+        assertTrue(doc.getContext().get("default").contains(munip.getNames().get("name")));
     }
 
     /**
@@ -263,7 +280,7 @@ class NominatimConnectorDBTest {
         PhotonDoc doc = importer.get(village);
 
         AssertUtil.assertNoAddress(doc, AddressType.CITY);
-        assertTrue(doc.getContext().contains(munip.getNames()));
+        assertTrue(doc.getContext().get("default").contains(munip.getNames().get("name")));
     }
 
     /**
