@@ -16,7 +16,7 @@ public class ImportThread {
 
     private static final int PROGRESS_INTERVAL = 50000;
     private static final NominatimResult FINAL_DOCUMENT = NominatimResult.fromAddress(new PhotonDoc(0, null, 0, null, null), null);
-    private final BlockingQueue<NominatimResult> documents = new LinkedBlockingDeque<>(100);
+    private final BlockingQueue<NominatimResult> documents = new LinkedBlockingDeque<>(10000);
     private final AtomicLong counter = new AtomicLong();
     private final Importer importer;
     private final Thread thread;
