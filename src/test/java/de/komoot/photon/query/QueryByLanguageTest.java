@@ -4,6 +4,7 @@ import de.komoot.photon.ESBaseTester;
 import de.komoot.photon.PhotonDoc;
 import de.komoot.photon.Importer;
 import de.komoot.photon.nominatim.model.AddressRow;
+import de.komoot.photon.nominatim.model.AddressRowList;
 import de.komoot.photon.searcher.PhotonResult;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -78,9 +79,12 @@ class QueryByLanguageTest extends ESBaseTester {
         PhotonDoc doc = new PhotonDoc(45, "N", 3, "place", "house")
                 .names(makeName("name", "here"));
 
-        doc.completePlace(List.of(AddressRow.makeRow(
+        AddressRowList addressRows = new AddressRowList();
+        addressRows.set(AddressRow.makeRow(
                 Map.of("name", "original", "name:de", "Deutsch"),
-                "highway", "unclassified", rank, new String[]{"en", "de"})));
+                "highway", "unclassified", rank, new String[]{"en", "de"}));
+        doc.completeAddress(addressRows, null);
+        doc.completeAddress(addressRows, null);
 
         instance.add(doc, 0);
         instance.finish();

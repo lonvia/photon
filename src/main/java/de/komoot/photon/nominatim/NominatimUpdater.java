@@ -82,15 +82,14 @@ public class NominatimUpdater extends NominatimConnector {
 
             final var addressPlaces = addressCache.getOrLoadAddressList(rs.getString("addresslines"), template);
             if (rs.getInt("rank_search") == 30 && rs.getString("parent_class") != null) {
-                addressPlaces.add(0, AddressRow.makeRow(
+                addressPlaces.set(AddressRow.makeRow(
                         dbutils.getMap(rs, "parent_name"),
                         rs.getString("parent_class"),
                         rs.getString("parent_type"),
                         rs.getInt("parent_rank_address"),
                         languages));
             }
-            doc.completePlace(addressPlaces);
-            doc.address(address); // take precedence over computed address
+            doc.completeAddress(addressPlaces, address);
             doc.setCountry(countryNames.get(rs.getString("country_code")));
 
             return NominatimResult.fromAddress(doc, address);
@@ -106,14 +105,14 @@ public class NominatimUpdater extends NominatimConnector {
 
             final var addressPlaces = addressCache.getOrLoadAddressList(rs.getString("addresslines"), template);
             if (rs.getString("parent_class") != null) {
-                addressPlaces.add(0, AddressRow.makeRow(
+                addressPlaces.set(AddressRow.makeRow(
                         dbutils.getMap(rs, "parent_name"),
                         rs.getString("parent_class"),
                         rs.getString("parent_type"),
                         rs.getInt("parent_rank_address"),
                         languages));
             }
-            doc.completePlace(addressPlaces);
+            doc.completeAddress(addressPlaces, null);
 
             doc.setCountry(countryNames.get(rs.getString("country_code")));
 

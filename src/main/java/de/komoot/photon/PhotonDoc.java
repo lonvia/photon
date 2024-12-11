@@ -1,15 +1,13 @@
 package de.komoot.photon;
 
-import de.komoot.photon.nominatim.model.AddressRow;
-import de.komoot.photon.nominatim.model.ContextMap;
-import de.komoot.photon.nominatim.model.NameMap;
+import de.komoot.photon.nominatim.model.*;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Point;
-import de.komoot.photon.nominatim.model.AddressType;
 import org.slf4j.Logger;
 
 import java.util.*;
+
 
 /**
  * Denormalized document with all information needed for saving in the Photon database.
@@ -96,25 +94,6 @@ public class PhotonDoc {
         return this;
     }
 
-
-    public PhotonDoc address(Map<String, String> address) {
-        if (address != null) {
-            extractAddress(address, AddressType.STREET, "street");
-            extractAddress(address, AddressType.CITY, "city");
-            extractAddress(address, AddressType.DISTRICT, "suburb");
-            extractAddress(address, AddressType.LOCALITY, "neighbourhood");
-            extractAddress(address, AddressType.COUNTY, "county");
-            extractAddress(address, AddressType.STATE, "state");
-
-            String addressPostCode = address.get("postcode");
-            if (addressPostCode != null && !addressPostCode.equals(postcode)) {
-                LOGGER.debug("Replacing postcode {} with {} for osmId #{}", postcode, addressPostCode, osmId);
-                postcode = addressPostCode;
-            }
-        }
-        return this;
-    }
-
     public PhotonDoc extraTags(Map<String, String> extratags) {
         if (extratags != null) {
             this.extratags = extratags;
@@ -182,59 +161,101 @@ public class PhotonDoc {
         return houseNumber != null || !name.isEmpty();
     }
     
-    /**
-     * Extract an address field from an address tag and replace the appropriate address field in the document.
-     *
-     * @param addressType The type of address field to fill.
-     * @param addressFieldName The name of the address tag to use (without the 'addr:' prefix).
-     */
-    private void extractAddress(Map<String, String> address, AddressType addressType, String addressFieldName) {
-        final String field = address.get(addressFieldName);
 
-        if (field == null) {
-            return;
+    public PhotonDoc completeAddress(AddressRowList addressPlaces, Map<String, String> addressTerms) {
+        if (addressTerms != null) {
+            setFromAddressTerms(
+                    AddressType.STREET, new String[]{"street"},
+                    26, 28,
+                    addressPlaces, addressTerms);
+            setFromAddressTerms(
+                    AddressType.LOCALITY, new String[]{"place", "neighbourhood"},
+                    17, 25,
+                    addressPlaces, addressTerms);
+            setFromAddressTerms(
+                    AddressType.DISTRICT, new String[]{"suburb"},
+                    17, 24,
+                    addressPlaces, addressTerms);
+            setFromAddressTerms(
+                    AddressType.CITY, new String[]{"city"},
+                    13, 21,
+                    addressPlaces, addressTerms);
+            setFromAddressTerms(
+                    AddressType.COUNTY, new String[]{"county", "district", "subdistrict"},
+                    10, 16,
+                    addressPlaces, addressTerms);
+            setFromAddressTerms(
+                    AddressType.STATE, new String[]{"state", "province"},
+                    5, 9,
+                    addressPlaces, addressTerms);
         }
 
-        var map = addressParts.get(addressType);
-        if (map == null) {
-            addressParts.put(addressType, NameMap.makeAddressNames(Map.of("name", field), new String[]{}));
-        } else {
-            final String existingName = map.get("name");
-            if (!field.equals(existingName)) {
-                LOGGER.debug("Replacing {} name '{}' with '{}' for osmId #{}", addressFieldName, existingName, field, osmId);
-                // we keep the former name in the context as it might be helpful when looking up typos
-                context.addName("default", existingName);
-                addressParts.put(addressType, map.copyWithReplacement("default", field));
+        if (addressPlaces != null) {
+            final AddressType doctype = getAddressType();
+            final Iterator<AddressRow> it = addressPlaces.reverseIterRanks();
+            while (it.hasNext()) {
+                final var address = it.next();
+                final AddressType atype = address.getAddressType();
+
+                if (atype != null
+                        && (atype == doctype || !setAddressPartIfNew(atype, address.getName()))
+                        && address.isUsefulForContext()) {
+                    // no specifically handled item, check if useful for context
+                    context.addFromMap(address.getName());
+                }
+                context.addFromMap(address.getContext());
+            }
+        }
+
+        // finally set postcode
+        if (addressTerms != null && addressTerms.containsKey("postcode")) {
+            this.postcode = addressTerms.get("postcode");
+        } else if (addressPlaces != null) {
+            var postcode_row = addressPlaces.getPostcode();
+            if (postcode_row != null) {
+                postcode = postcode_row.getName().get("default");
+                if (postcode != null) {
+                    this.postcode = postcode;
+                }
+            }
+        }
+
+        return this;
+    }
+
+    private void setFromAddressTerms(AddressType atype, String[] terms, int minRank, int maxRank,
+                                     AddressRowList addressPlaces, Map<String, String> addressTerms) {
+        for (var term: terms) {
+            final String termName = addressTerms.get(term);
+            if (termName != null) {
+                if (addressPlaces != null) {
+                    Iterator<AddressRow> it = addressPlaces.reverseIterRanks(minRank, maxRank);
+                    while (it.hasNext()) {
+                        AddressRow address = it.next();
+                        if (address.getName().matches(termName)) {
+                            addressParts.put(atype, address.getName());
+                            context.addFromMap(address.getContext());
+                            addressPlaces.removeRank(address.getRankAddress());
+                            return;
+                        }
+                    }
+                }
+                // no matching address, fall back to just using the term
+                NameMap names = new NameMap();
+                addressParts.put(atype, NameMap.makeSimpleName(termName));
+                return;
             }
         }
     }
 
     /**
      * Set names for the given address part if it is not already set.
-     *
-     * @return True, if the address was inserted.
      */
     private boolean setAddressPartIfNew(AddressType addressType, NameMap names) {
         return addressParts.computeIfAbsent(addressType, k -> names) == names;
     }
 
-    /**
-     * Complete address data from a list of address rows.
-     */
-    public void completePlace(List<AddressRow> addresses) {
-        final AddressType doctype = getAddressType();
-        for (AddressRow address : addresses) {
-            final AddressType atype = address.getAddressType();
 
-            if (atype != null
-                    && (atype == doctype || !setAddressPartIfNew(atype, address.getName()))
-                    && address.isUsefulForContext()) {
-                // no specifically handled item, check if useful for context
-                context.addFromMap(address.getName());
-            }
-            context.addFromMap(address.getContext());
-        }
-    }
 
     public void setCountry(NameMap names) {
         addressParts.put(AddressType.COUNTRY, names);

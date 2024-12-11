@@ -48,17 +48,17 @@ public class NominatimAddressCache {
         }
     }
 
-    public List<AddressRow> getAddressList(String addressline) {
+    public AddressRowList getAddressList(String addressline) {
         if (addressline == null || addressline.isBlank()) {
-            return new ArrayList<>();
+            return new AddressRowList();
         }
 
         return makeAddressList(new JSONArray(addressline));
     }
 
-    public List<AddressRow> getOrLoadAddressList(String addressline, JdbcTemplate template) {
+    public AddressRowList getOrLoadAddressList(String addressline, JdbcTemplate template) {
         if (addressline == null || addressline.isBlank()) {
-            return new ArrayList<>();
+            return new AddressRowList();
         }
 
         final JSONArray addressPlaces = new JSONArray(addressline);
@@ -80,15 +80,15 @@ public class NominatimAddressCache {
         return makeAddressList(addressPlaces);
     }
 
-    private List<AddressRow> makeAddressList(JSONArray addressPlaces) {
-        final ArrayList<AddressRow> outlist = new ArrayList<>();
+    private AddressRowList makeAddressList(JSONArray addressPlaces) {
+        final AddressRowList outlist = new AddressRowList();
 
         for (int i = 0; i < addressPlaces.length(); ++i) {
             final long placeId = addressPlaces.optLong(i);
             if (placeId > 0) {
                 final AddressRow row = addresses.get(placeId);
                 if (row != null) {
-                    outlist.add(row);
+                    outlist.set(row);
                 }
             }
         }

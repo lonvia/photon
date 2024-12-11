@@ -24,7 +24,11 @@ public class AddressRow {
         return AddressType.fromRank(rankAddress);
     }
 
-    private boolean isPostcode() {
+    public int getRankAddress() {
+        return rankAddress;
+    }
+
+    public boolean isPostcode() {
         if ("place".equals(osmKey) && "postcode".equals(osmValue)) {
             return true;
         }

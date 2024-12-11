@@ -74,8 +74,8 @@ public class NominatimImporter extends NominatimConnector {
 
                     assert (doc != null);
 
-                    doc.completePlace(addressCache.getAddressList(rs.getString("addresslines")));
-                    doc.address(address); // take precedence over computed address
+                    doc.completeAddress(addressCache.getAddressList(rs.getString("addresslines")),
+                                        address);
                     doc.setCountry(cnames);
 
                     var result = NominatimResult.fromAddress(doc, address);
@@ -107,15 +107,14 @@ public class NominatimImporter extends NominatimConnector {
 
                     final var addressPlaces = addressCache.getAddressList(rs.getString("addresslines"));
                     if (rs.getString("parent_class") != null) {
-                        addressPlaces.add(0, AddressRow.makeRow(
+                        addressPlaces.set(AddressRow.makeRow(
                                 dbutils.getMap(rs, "parent_name"),
                                 rs.getString("parent_class"),
                                 rs.getString("parent_type"),
                                 rs.getInt("parent_rank_address"),
                                 languages));
                     }
-                    doc.completePlace(addressPlaces);
-                    doc.address(address); // take precedence over computed address
+                    doc.completeAddress(addressPlaces, address);
                     doc.setCountry(cnames);
 
                     var result = NominatimResult.fromAddress(doc, address);
@@ -136,14 +135,14 @@ public class NominatimImporter extends NominatimConnector {
 
                     final var addressPlaces = addressCache.getAddressList(rs.getString("addresslines"));
                     if (rs.getString("parent_class") != null) {
-                        addressPlaces.add(0, AddressRow.makeRow(
+                        addressPlaces.set(AddressRow.makeRow(
                                 dbutils.getMap(rs, "parent_name"),
                                 rs.getString("parent_class"),
                                 rs.getString("parent_type"),
                                 rs.getInt("parent_rank_address"),
                                 languages));
                     }
-                    doc.completePlace(addressPlaces);
+                    doc.completeAddress(addressPlaces, null);
 
                     doc.setCountry(cnames);
 

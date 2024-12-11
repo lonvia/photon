@@ -101,7 +101,7 @@ class QueryBasicSearchTest extends ESBaseTester {
         address.put("state", "Estado");
 
         Importer instance = makeImporter();
-        instance.add(createDoc("name", "Castillo").address(address), 0);
+        instance.add(createDoc("name", "Castillo").completeAddress(null, address), 0);
         instance.finish();
         refresh();
 
@@ -118,7 +118,7 @@ class QueryBasicSearchTest extends ESBaseTester {
     @Test
     void testSearchMustContainANameTerm() throws IOException {
         Importer instance = makeImporter();
-        instance.add(createDoc("name", "Palermo").address(Map.of("state", "Sicilia")), 0);
+        instance.add(createDoc("name", "Palermo").completeAddress(null, Map.of("state", "Sicilia")), 0);
         instance.finish();
         refresh();
 
@@ -135,7 +135,7 @@ class QueryBasicSearchTest extends ESBaseTester {
     @Test
     void testSearchWithHousenumberNamed() throws IOException {
         Importer instance = makeImporter();
-        instance.add(createDoc("name", "Edeka").houseNumber("5").address(Map.of("street", "Hauptstrasse")), 0);
+        instance.add(createDoc("name", "Edeka").houseNumber("5").completeAddress(null, Map.of("street", "Hauptstrasse")), 0);
         instance.finish();
         refresh();
 
@@ -150,7 +150,10 @@ class QueryBasicSearchTest extends ESBaseTester {
     @Test
     void testSearchWithHousenumberUnnamed() throws IOException {
         Importer instance = makeImporter();
-        instance.add(createDoc().houseNumber("5").address(Map.of("street", "Hauptstrasse")), 0);
+        instance.add(createDoc()
+                    .houseNumber("5")
+                    .completeAddress(null, Map.of("street", "Hauptstrasse")),
+                0);
         instance.finish();
         refresh();
 

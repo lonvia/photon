@@ -19,6 +19,16 @@ public class NameMap extends AbstractMap<String, String> {
         return newmap;
     }
 
+    public boolean matches(String other) {
+        for (var e: entries) {
+            if (e.getValue().equalsIgnoreCase(other)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private NameMap setName(String field, Map<String, String> source, String... keys) {
         if (!containsKey(field)) {
             for (var key : keys) {
@@ -57,5 +67,12 @@ public class NameMap extends AbstractMap<String, String> {
                 .setName("old", source, "_place_old_name", "old_name")
                 .setName("reg", source, "_place_reg_name", "reg_name")
                 .setName("housename", source,"addr:housename");
+    }
+
+    public static NameMap makeSimpleName(String name) {
+        var ret = new NameMap();
+        ret.entries.add(new SimpleImmutableEntry<>("default", name));
+
+        return ret;
     }
 }
