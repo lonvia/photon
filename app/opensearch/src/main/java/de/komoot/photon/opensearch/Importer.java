@@ -1,5 +1,6 @@
 package de.komoot.photon.opensearch;
 
+import com.fasterxml.jackson.core.TreeNode;
 import de.komoot.photon.PhotonDoc;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.Time;
@@ -26,6 +27,20 @@ public class Importer implements de.komoot.photon.Importer {
                 .index(i -> i
                         .index(PhotonIndex.NAME)
                         .id(doc.getUid(objectId))
+                        .document(doc)));
+        ++todoDocuments;
+
+        if (todoDocuments % 10000 == 0) {
+            saveDocuments();
+        }
+    }
+
+    public void addRaw(TreeNode doc, String objectId)
+    {
+        bulkRequest.operations(op -> op
+                .index(i -> i
+                        .index(PhotonIndex.NAME)
+                        .id(objectId)
                         .document(doc)));
         ++todoDocuments;
 

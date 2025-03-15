@@ -29,6 +29,9 @@ public class CommandLineArgs {
     @Parameter(names = "-nominatim-import", description = "Import nominatim database into photon (deleting the previous index).")
     private boolean nominatimImport = false;
 
+    @Parameter(names = "-json-import", description = "Import a json dump file into photon (use '-' for reading from stdin).")
+    private String jsonImport = null;
+
     @Parameter(names = "-nominatim-update-init-for", description = "Set up tracking of updates in the Nominatim database for the given user and exit.")
     private String nominatimUpdateInit = null;
 
@@ -156,6 +159,10 @@ public class CommandLineArgs {
 
     public String getJsonDump() {
         return this.jsonDump;
+    }
+
+    public String getJsonImport() {
+        return this.jsonImport;
     }
 
     public String getHost() {

@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Date;
 
 /**
  * Importer which writes out the documents in a json-like file.
@@ -17,7 +18,7 @@ public class JsonDumper implements Importer {
     private final String[] languages;
     private final String[] extraTags;
 
-    public JsonDumper(String filename, String[] languages, String[] extraTags) throws FileNotFoundException {
+    public JsonDumper(String filename, String[] languages, String[] extraTags, Date importDate) throws FileNotFoundException {
         this.writer = new PrintWriter(filename);
         this.languages = languages;
         this.extraTags = extraTags;

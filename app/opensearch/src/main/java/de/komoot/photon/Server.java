@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Date;
 
 public class Server {
@@ -191,6 +192,24 @@ public class Server {
     public Updater createUpdater(String[] languages, String[] extraTags) {
         registerPhotonDocSerializer(languages, extraTags);
         return new de.komoot.photon.opensearch.Updater(client);
+    }
+
+    public JsonImporter createJsonImporter(File file) {
+        try {
+            return new OpenSearchJsonImporter(file, new de.komoot.photon.opensearch.Importer(client));
+        } catch (IOException e) {
+            LOGGER.error("Error opening file", e);
+            throw new UsageException("Cannot read JSON dump.");
+        }
+    }
+
+    public JsonImporter createJsonImporter(InputStream stream) {
+        try {
+            return new OpenSearchJsonImporter(stream, new de.komoot.photon.opensearch.Importer(client));
+        } catch (IOException e) {
+            LOGGER.error("Error opening file", e);
+            throw new UsageException("Cannot read JSON dump.");
+        }
     }
 
     public SearchHandler createSearchHandler(String[] languages, int queryTimeoutSec) {

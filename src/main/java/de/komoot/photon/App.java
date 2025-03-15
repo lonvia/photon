@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import spark.Request;
 import spark.Response;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -54,6 +55,12 @@ public class App {
             LOGGER.info("Make sure that the ES cluster is ready, this might take some time.");
             esServer.waitForReady();
             LOGGER.info("ES cluster is now ready.");
+
+            if (args.getJsonImport() != null) {
+                shutdownES = true;
+                startJsonImport(args, esServer);
+                return;
+            }
 
             if (args.isNominatimImport()) {
                 shutdownES = true;
@@ -105,9 +112,12 @@ public class App {
      * Take nominatim data and dump it to a Json file.
      */
     private static void startJsonDump(CommandLineArgs args) {
+        final var nominatimConnector = new NominatimImporter(args.getHost(), args.getPort(), args.getDatabase(), args.getUser(), args.getPassword());
+        final Date importDate = nominatimConnector.getLastImportDate();
+
         try {
             final String filename = args.getJsonDump();
-            final JsonDumper jsonDumper = new JsonDumper(filename, args.getLanguages(), args.getExtraTags());
+            final JsonDumper jsonDumper = new JsonDumper(filename, args.getLanguages(), args.getExtraTags(), importDate);
 
             importFromDatabase(args, jsonDumper);
             LOGGER.info("Json dump was created: {}", filename);
@@ -127,6 +137,43 @@ public class App {
         importFromDatabase(args, esServer.createImporter(languages, args.getExtraTags()));
 
         LOGGER.info("Imported data from nominatim to photon with languages: {}", String.join(",", languages));
+    }
+
+    private static void startJsonImport(CommandLineArgs args, Server esServer) {
+        JsonImporter reader;
+        Date importDate;
+        String[] languages;
+
+        try {
+            if ("-".equals(args.getJsonImport())) {
+                reader = esServer.createJsonImporter(System.in);
+            } else {
+                reader = esServer.createJsonImporter(new File(args.getJsonImport()));
+            }
+            importDate = reader.readHeader();
+        } catch (IOException e) {
+            throw new UsageException("Cannot read dump file: " + e.getMessage());
+        }
+
+
+        try {
+            // Clear out previous data.
+            final var dbProperties = esServer.recreateIndex(args.getLanguages(), importDate, args.getSupportStructuredQueries());
+            languages = dbProperties.getLanguages();
+        } catch (IOException e) {
+            throw new UsageException("Cannot setup index, elastic search config files not readable: " + e.getMessage());
+        }
+
+        LOGGER.info("Starting import from json to photon with languages: {}", String.join(",", languages));
+
+        long total;
+        try {
+            total = reader.readData(args.getCountryCodes(), languages, args.getExtraTags());
+        } catch (IOException e) {
+            throw new UsageException("Error reading dump file: " + e.getMessage());
+        }
+
+        LOGGER.info("Imported {} documents from json to photon with languages: {}", total, String.join(",", languages));
     }
 
     private static String[] initDatabase(CommandLineArgs args, Server esServer) {
