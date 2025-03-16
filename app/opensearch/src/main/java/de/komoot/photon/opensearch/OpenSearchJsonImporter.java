@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.komoot.photon.JsonDumper;
 import de.komoot.photon.JsonImporter;
+import org.slf4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,6 +16,7 @@ import java.time.Instant;
 import java.util.Date;
 
 public class OpenSearchJsonImporter implements JsonImporter {
+    private static final Logger LOGGER = org.slf4j.LoggerFactory.getLogger(OpenSearchJsonImporter.class);
     final Importer importer;
     final JsonParser parser;
 
@@ -59,12 +61,19 @@ public class OpenSearchJsonImporter implements JsonImporter {
 
     @Override
     public long readData(String[] countryCodes, String[] languages, String[] extraTags) throws IOException {
+        final long startMillis = System.currentTimeMillis();
         long totalDocuments = 0;
         TreeNode tree = parser.readValueAsTree();
         while (tree != null) {
             importer.addRaw(tree.get("document"), tree.get("id").toString());
             totalDocuments += 1;
             tree = parser.readValueAsTree();
+
+            if (totalDocuments % 50000 == 0) {
+                final double documentsPerSecond = 1000d * totalDocuments / (System.currentTimeMillis() - startMillis);
+                LOGGER.info("Imported {} documents [{}/second]", totalDocuments, documentsPerSecond);
+            }
+
         }
 
         importer.finish();
