@@ -2,7 +2,6 @@ package de.komoot.photon.opensearch;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.komoot.photon.JsonDumper;
@@ -63,9 +62,9 @@ public class OpenSearchJsonImporter implements JsonImporter {
     public long readData(String[] countryCodes, String[] languages, String[] extraTags) throws IOException {
         final long startMillis = System.currentTimeMillis();
         long totalDocuments = 0;
-        TreeNode tree = parser.readValueAsTree();
+        var tree = parser.readValueAs(JsonNode.class);
         while (tree != null) {
-            importer.addRaw(tree.get("document"), tree.get("id").toString());
+            importer.addRaw(tree.get("document"), tree.get("id").asText());
             totalDocuments += 1;
             tree = parser.readValueAsTree();
 
