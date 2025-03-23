@@ -50,10 +50,18 @@ public class JsonDumpTest extends ESBaseTester {
     }
 
     private void dumpImportJson(Path dumpFile) throws IOException {
+        dumpImportJson(dumpFile, new String[]{"en", "de"}, new String[]{});
+    }
+
+    private void dumpImportJsonWithExtraTags(Path dumpFile, String... extraTags) throws IOException {
+        dumpImportJson(dumpFile, new String[]{"en", "de"}, extraTags);
+    }
+
+    private void dumpImportJson(Path dumpFile, String[] languages, String[] extraTags) throws IOException {
         final Date importDate = Date.from(Instant.now());
 
         final JsonDumper dumper = new JsonDumper(dumpFile.toString(),
-                new String[]{"en", "de"}, new String[]{"wikidata"}, importDate);
+                                                 languages, extraTags, importDate);
 
         ImportThread importThread = new ImportThread(dumper);
         try {
@@ -84,8 +92,16 @@ public class JsonDumpTest extends ESBaseTester {
         return readImportFromJson(dumpFile, new String[]{}, new String[]{"en", "de"}, new String[]{});
     }
 
-    private long readImportFromJsonWithCountries(Path dumpFile, String[] countryCodes) throws IOException {
+    private long readImportFromJsonWithCountries(Path dumpFile, String... countryCodes) throws IOException {
         return readImportFromJson(dumpFile, countryCodes, new String[]{"en", "de"}, new String[]{});
+    }
+
+    private long readImportFromJsonWithExtraTags(Path dumpFile, String... extraTags) throws IOException {
+        return readImportFromJson(dumpFile, new String[]{}, new String[]{"en", "de"}, extraTags);
+    }
+
+    private long readImportFromJsonWithLanguages(Path dumpFile, String... languages) throws IOException {
+        return readImportFromJson(dumpFile, new String[]{}, languages, new String[]{});
     }
 
     @Test
@@ -101,7 +117,7 @@ public class JsonDumpTest extends ESBaseTester {
                 .postcode("AB-45")
                 .add(jdbc);
 
-        Path testFile = tempDir.resolve("dump.json");
+        final Path testFile = tempDir.resolve("dump.json");
         dumpImportJson(testFile);
         assertEquals(1, readImportFromJson(testFile));
 
@@ -127,12 +143,94 @@ public class JsonDumpTest extends ESBaseTester {
         new PlacexTestRow("amenity", "cafe").id(2000).name("Amsterdam").country("nl").add(jdbc);
         new PlacexTestRow("amenity", "cafe").id(3000).name("Chicago").country("us").add(jdbc);
 
-        Path testFile = tempDir.resolve("dump.json");
+        final Path testFile = tempDir.resolve("dump.json");
         dumpImportJson(testFile);
-        assertEquals(2, readImportFromJsonWithCountries(testFile, new String[]{"hu", "nl", "us"}));
+        assertEquals(2, readImportFromJsonWithCountries(testFile, "hu", "nl", "us"));
 
         assertNull(getById(1000));
         assertNotNull(getById(2000));
         assertNotNull(getById(3000));
+    }
+
+    @Test
+    void testDumpImportNoExtratags(@TempDir Path tempDir) throws IOException {
+        new PlacexTestRow("amenity", "restaurant")
+                .id(1000).name("Eat")
+                .extra("cuisine", "haute")
+                .extra("takeout", "yes")
+                .add(jdbc);
+
+        final Path testFile = tempDir.resolve("dump.json");
+        dumpImportJsonWithExtraTags(testFile, "cuisine", "takeout");
+        assertEquals(1, readImportFromJson(testFile));
+
+        final PhotonResult response = getById(1000);
+
+        assertNotNull(response);
+        assertNull(response.getMap("extra"));
+    }
+
+    @Test
+    void testDumpImportFilterExtratags(@TempDir Path tempDir) throws IOException {
+        new PlacexTestRow("amenity", "restaurant")
+                .id(1000).name("Eat")
+                .extra("cuisine", "haute")
+                .extra("takeout", "yes")
+                .add(jdbc);
+
+        final Path testFile = tempDir.resolve("dump.json");
+        dumpImportJsonWithExtraTags(testFile, "cuisine", "takeout");
+        assertEquals(1, readImportFromJsonWithExtraTags(testFile, "cuisine"));
+
+        final PhotonResult response = getById(1000);
+
+        assertNotNull(response);
+        assertEquals(Map.of("cuisine", "haute"), response.getMap("extra"));
+    }
+
+    @Test
+    void testDumpImportNoLanguages(@TempDir Path tempDir) throws IOException {
+        new PlacexTestRow("amenity", "cafe")
+                .id(1234)
+                .osm("N", 5000)
+                .name("Spot").name("name:en", "EnSpot").name("name:de", "DeSpot")
+                .centroid(45.0, 56.0)
+                .addr("city", "Blue")
+                .importance(0.3)
+                .ranks(26)
+                .postcode("AB-45")
+                .add(jdbc);
+
+        final Path testFile = tempDir.resolve("dump.json");
+        dumpImportJson(testFile);
+        assertEquals(1, readImportFromJsonWithLanguages(testFile));
+
+        final PhotonResult response = getById(1234);
+
+        assertNotNull(response);
+        assertEquals(Map.of("default", "Spot"), response.getMap("name"));
+    }
+
+    @Test
+    void testDumpImportFilterLanguages(@TempDir Path tempDir) throws IOException {
+        new PlacexTestRow("amenity", "cafe")
+                .id(1234)
+                .osm("N", 5000)
+                .name("Spot").name("name:en", "EnSpot").name("name:de", "DeSpot")
+                .centroid(45.0, 56.0)
+                .addr("city", "Blue")
+                .importance(0.3)
+                .ranks(26)
+                .postcode("AB-45")
+                .add(jdbc);
+
+        final Path testFile = tempDir.resolve("dump.json");
+        dumpImportJson(testFile);
+        assertEquals(1, readImportFromJsonWithLanguages(testFile, "nl", "de"));
+
+        final PhotonResult response = getById(1234);
+
+        assertNotNull(response);
+        assertEquals(Map.of("default", "Spot", "de", "DeSpot"), response.getMap("name"));
     }
 }

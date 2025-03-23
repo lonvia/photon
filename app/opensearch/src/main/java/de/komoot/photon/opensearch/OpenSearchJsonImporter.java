@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.komoot.photon.JsonDumper;
 import de.komoot.photon.JsonImporter;
+import de.komoot.photon.nominatim.model.AddressType;
 import org.slf4j.Logger;
 
 import java.io.File;
@@ -74,11 +75,40 @@ public class OpenSearchJsonImporter implements JsonImporter {
             }
         }
 
+        List<String> elist = extraTags.length == 0 ? null : Arrays.asList(extraTags);
+
+        ArrayList<String> llist = new ArrayList<>();
+        llist.add("default");
+        for (var lang : languages) {
+            llist.add(lang);
+        }
+
         var tree = parser.readValueAs(JsonNode.class);
         while (tree != null) {
             final var doc = tree.get("document");
             final var countryCode = doc.get("countrycode");
             if (clist == null || (countryCode != null && clist.contains(countryCode.asText()))) {
+                // filter extra tags
+                if (elist == null) {
+                    tree.withObject("document").remove("extra");
+                } else if (doc.has("extra")) {
+                    doc.withObject("extra").retain(elist);
+                }
+
+                // filter languages
+                if (doc.has("name")) {
+                    doc.withObject("name").retain(llist);
+                }
+                if (doc.has("context")) {
+                    doc.withObject("context").retain(llist);
+                }
+
+                for (var addr : AddressType.values()) {
+                    if (doc.has(addr.getName())) {
+                        doc.withObject(addr.getName()).retain(llist);
+                    }
+                }
+
                 importer.addRaw(doc, tree.get("id").asText());
                 totalDocuments += 1;
 
