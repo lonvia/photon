@@ -13,10 +13,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 public class OpenSearchJsonImporter implements JsonImporter {
     private static final Logger LOGGER = org.slf4j.LoggerFactory.getLogger(OpenSearchJsonImporter.class);
@@ -80,9 +77,7 @@ public class OpenSearchJsonImporter implements JsonImporter {
 
         ArrayList<String> llist = new ArrayList<>();
         llist.add("default");
-        for (var lang : languages) {
-            llist.add(lang);
-        }
+        Collections.addAll(llist, languages);
 
         var tree = parser.readValueAs(JsonNode.class);
         while (tree != null) {
