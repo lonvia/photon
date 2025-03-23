@@ -12,7 +12,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 public class OpenSearchJsonImporter implements JsonImporter {
     private static final Logger LOGGER = org.slf4j.LoggerFactory.getLogger(OpenSearchJsonImporter.class);
@@ -62,17 +65,29 @@ public class OpenSearchJsonImporter implements JsonImporter {
     public long readData(String[] countryCodes, String[] languages, String[] extraTags) throws IOException {
         final long startMillis = System.currentTimeMillis();
         long totalDocuments = 0;
+
+        List<String> clist = null;
+        if  (countryCodes.length > 0) {
+            clist = new ArrayList<>();
+            for (var cc : countryCodes) {
+                clist.add(cc.toUpperCase());
+            }
+        }
+
         var tree = parser.readValueAs(JsonNode.class);
         while (tree != null) {
-            importer.addRaw(tree.get("document"), tree.get("id").asText());
-            totalDocuments += 1;
-            tree = parser.readValueAsTree();
+            final var doc = tree.get("document");
+            final var countryCode = doc.get("countrycode");
+            if (clist == null || (countryCode != null && clist.contains(countryCode.asText()))) {
+                importer.addRaw(doc, tree.get("id").asText());
+                totalDocuments += 1;
 
-            if (totalDocuments % 50000 == 0) {
-                final double documentsPerSecond = 1000d * totalDocuments / (System.currentTimeMillis() - startMillis);
-                LOGGER.info("Imported {} documents [{}/second]", totalDocuments, documentsPerSecond);
+                if (totalDocuments % 50000 == 0) {
+                    final double documentsPerSecond = 1000d * totalDocuments / (System.currentTimeMillis() - startMillis);
+                    LOGGER.info("Imported {} documents [{}/second]", totalDocuments, documentsPerSecond);
+                }
             }
-
+            tree = parser.readValueAsTree();
         }
 
         importer.finish();

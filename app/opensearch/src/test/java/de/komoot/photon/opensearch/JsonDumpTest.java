@@ -21,13 +21,13 @@ import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class JsonDumpTest extends ESBaseTester {
     private NominatimImporter connector;
@@ -52,31 +52,40 @@ public class JsonDumpTest extends ESBaseTester {
     private void dumpImportJson(Path dumpFile) throws IOException {
         final Date importDate = Date.from(Instant.now());
 
-        {
-            final JsonDumper dumper = new JsonDumper(dumpFile.toString(), new String[]{"en", "de"}, new String[]{"wikidata"}, importDate);
+        final JsonDumper dumper = new JsonDumper(dumpFile.toString(),
+                new String[]{"en", "de"}, new String[]{"wikidata"}, importDate);
 
-            ImportThread importThread = new ImportThread(dumper);
-            try {
-                for (var country : connector.getCountriesFromDatabase()) {
-                    connector.readCountry(country, importThread);
-                }
-            } finally {
-                importThread.finish();
+        ImportThread importThread = new ImportThread(dumper);
+        try {
+            for (var country : connector.getCountriesFromDatabase()) {
+                connector.readCountry(country, importThread);
             }
+        } finally {
+            importThread.finish();
         }
+
+        Files.copy(dumpFile, System.out);
     }
 
 
-    private long readImportFromJson(Path dumpFile) throws IOException {
+    private long readImportFromJson(Path dumpFile, String[] countryCodes, String[] languages, String[] extraTags) throws IOException {
         setUpES();
 
         final var reader = new OpenSearchJsonImporter(dumpFile.toFile(), (Importer) makeImporter());
         reader.readHeader();
-        long numDocuments = reader.readData(null, null, null);
+        long numDocuments = reader.readData(countryCodes, languages, extraTags);
 
         refresh();
 
         return numDocuments;
+    }
+
+    private long readImportFromJson(Path dumpFile) throws IOException {
+        return readImportFromJson(dumpFile, new String[]{}, new String[]{"en", "de"}, new String[]{});
+    }
+
+    private long readImportFromJsonWithCountries(Path dumpFile, String[] countryCodes) throws IOException {
+        return readImportFromJson(dumpFile, countryCodes, new String[]{"en", "de"}, new String[]{});
     }
 
     @Test
@@ -93,9 +102,7 @@ public class JsonDumpTest extends ESBaseTester {
                 .add(jdbc);
 
         Path testFile = tempDir.resolve("dump.json");
-
         dumpImportJson(testFile);
-
         assertEquals(1, readImportFromJson(testFile));
 
         var results = getServer().createSearchHandler(new String[]{"en"}, 1).search(new PhotonRequest("Spot", "en"));
@@ -112,5 +119,20 @@ public class JsonDumpTest extends ESBaseTester {
         assertEquals(Map.of("default", "Blue"), response.getMap("city"));
         assertEquals(0.3, response.get(Constants.IMPORTANCE));
         assertEquals("AB-45", response.get(Constants.POSTCODE));
+    }
+
+    @Test
+    void testDumpImportRestrictCountry(@TempDir Path tempDir) throws IOException {
+        new PlacexTestRow("amenity", "cafe").id(1000).name("Berlin").country("de").add(jdbc);
+        new PlacexTestRow("amenity", "cafe").id(2000).name("Amsterdam").country("nl").add(jdbc);
+        new PlacexTestRow("amenity", "cafe").id(3000).name("Chicago").country("us").add(jdbc);
+
+        Path testFile = tempDir.resolve("dump.json");
+        dumpImportJson(testFile);
+        assertEquals(2, readImportFromJsonWithCountries(testFile, new String[]{"hu", "nl", "us"}));
+
+        assertNull(getById(1000));
+        assertNotNull(getById(2000));
+        assertNotNull(getById(3000));
     }
 }
