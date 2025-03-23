@@ -130,21 +130,33 @@ public class PhotonDocSerializer extends StdSerializer<PhotonDoc> {
     }
 
     private void writeExtraTags(JsonGenerator gen, Map<String, String> docTags) throws IOException {
-        boolean foundTag = false;
-
-        for (String tag: extraTags) {
-            String value = docTags.get(tag);
-            if (value != null) {
-                if (!foundTag) {
-                    gen.writeObjectFieldStart("extra");
-                    foundTag = true;
-                }
-                gen.writeStringField(tag, value);
-            }
+        if (docTags.isEmpty() || extraTags.length == 0) {
+            return;
         }
 
-        if (foundTag) {
+
+        if (extraTags.length == 1 && "ALL".equals(extraTags[0])) {
+            gen.writeObjectFieldStart("extra");
+            for (var entry : docTags.entrySet()) {
+                gen.writeStringField(entry.getKey(), entry.getValue());
+            }
             gen.writeEndObject();
+        } else {
+            boolean foundTag = false;
+            for (String tag : extraTags) {
+                String value = docTags.get(tag);
+                if (value != null) {
+                    if (!foundTag) {
+                        gen.writeObjectFieldStart("extra");
+                        foundTag = true;
+                    }
+                    gen.writeStringField(tag, value);
+                }
+            }
+
+            if (foundTag) {
+                gen.writeEndObject();
+            }
         }
     }
 

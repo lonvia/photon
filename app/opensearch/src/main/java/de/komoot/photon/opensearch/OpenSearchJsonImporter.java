@@ -75,7 +75,8 @@ public class OpenSearchJsonImporter implements JsonImporter {
             }
         }
 
-        List<String> elist = extraTags.length == 0 ? null : Arrays.asList(extraTags);
+        boolean keepAllExtraTags = extraTags.length == 1 && "ALL".equals(extraTags[0]);
+        List<String> elist = (keepAllExtraTags || extraTags.length == 0) ? null : Arrays.asList(extraTags);
 
         ArrayList<String> llist = new ArrayList<>();
         llist.add("default");
@@ -89,10 +90,12 @@ public class OpenSearchJsonImporter implements JsonImporter {
             final var countryCode = doc.get("countrycode");
             if (clist == null || (countryCode != null && clist.contains(countryCode.asText()))) {
                 // filter extra tags
-                if (elist == null) {
-                    tree.withObject("document").remove("extra");
-                } else if (doc.has("extra")) {
-                    doc.withObject("extra").retain(elist);
+                if (!keepAllExtraTags) {
+                    if (elist == null) {
+                        tree.withObject("document").remove("extra");
+                    } else if (doc.has("extra")) {
+                        doc.withObject("extra").retain(elist);
+                    }
                 }
 
                 // filter languages
