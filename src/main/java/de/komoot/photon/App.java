@@ -140,9 +140,16 @@ public class App {
     }
 
     private static void startJsonImport(CommandLineArgs args, Server esServer) {
+        DatabaseProperties dbProperties;
+
+        try {
+            // Clear out previous data.
+            dbProperties = esServer.recreateIndex(args.getLanguages(), null, args.getSupportStructuredQueries());
+        } catch (IOException e) {
+            throw new UsageException("Cannot setup index, elastic search config files not readable: " + e.getMessage());
+        }
+
         JsonImporter reader;
-        Date importDate;
-        String[] languages;
 
         try {
             if ("-".equals(args.getJsonImport())) {
@@ -150,30 +157,25 @@ public class App {
             } else {
                 reader = esServer.createJsonImporter(new File(args.getJsonImport()));
             }
-            importDate = reader.readHeader();
+            final Date importDate = reader.readHeader();
+
+            dbProperties.setImportDate(importDate);
+            esServer.saveToDatabase(dbProperties);
         } catch (IOException e) {
             throw new UsageException("Cannot read dump file: " + e.getMessage());
         }
 
-
-        try {
-            // Clear out previous data.
-            final var dbProperties = esServer.recreateIndex(args.getLanguages(), importDate, args.getSupportStructuredQueries());
-            languages = dbProperties.getLanguages();
-        } catch (IOException e) {
-            throw new UsageException("Cannot setup index, elastic search config files not readable: " + e.getMessage());
-        }
-
-        LOGGER.info("Starting import from json to photon with languages: {}", String.join(",", languages));
+        final var langString = String.join(",", dbProperties.getLanguages());
+        LOGGER.info("Starting import from json to photon with languages: {}", langString);
 
         long total;
         try {
-            total = reader.readData(args.getCountryCodes(), languages, args.getExtraTags());
+            total = reader.readData(args.getCountryCodes(), dbProperties.getLanguages(), args.getExtraTags());
         } catch (IOException e) {
             throw new UsageException("Error reading dump file: " + e.getMessage());
         }
 
-        LOGGER.info("Imported {} documents from json to photon with languages: {}", total, String.join(",", languages));
+        LOGGER.info("Imported {} documents from json to photon with languages: {}", total, langString);
     }
 
     private static String[] initDatabase(CommandLineArgs args, Server esServer) {
