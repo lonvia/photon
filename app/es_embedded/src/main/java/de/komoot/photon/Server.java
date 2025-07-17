@@ -25,8 +25,6 @@ import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
@@ -74,7 +72,7 @@ public class Server {
 
     public Server(String mainDirectory) {
         try {
-            setupDirectories(new File(mainDirectory).toURI().toURL());
+            setupDirectories(new File(mainDirectory));
         } catch (Exception e) {
             throw new UsageException("Can't create directories: " + mainDirectory + ": " + e.getMessage());
         }
@@ -149,8 +147,7 @@ public class Server {
     }
 
 
-    private void setupDirectories(URL directoryName) throws IOException, URISyntaxException {
-        final File mainDirectory = new File(directoryName.toURI());
+    private void setupDirectories(File mainDirectory) throws IOException {
         final File photonDirectory = new File(mainDirectory, "photon_data");
         this.esDirectory = new File(photonDirectory, "elasticsearch");
         final File pluginDirectory = new File(esDirectory, "plugins");
