@@ -88,11 +88,6 @@ public class OpenSearchResult implements PhotonResult {
         return coordinates;
     }
 
-    @Nullable
-    public Object getGeometry() {
-        return geometry;
-    }
-
     @Override
     public double @Nullable [] getExtent() {
         return extent;
@@ -118,11 +113,6 @@ public class OpenSearchResult implements PhotonResult {
         final var se = coords.getSE();
 
         extent = new double[]{nw[0], nw[1], se[0], se[1]};
-    }
-
-    @JsonProperty(DocFields.GEOMETRY)
-    void setGeometry(Object geometry) {
-        this.geometry = geometry;
     }
 
     @JsonAnySetter
