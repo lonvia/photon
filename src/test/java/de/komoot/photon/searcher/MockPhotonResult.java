@@ -2,6 +2,7 @@ package de.komoot.photon.searcher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.komoot.photon.opensearch.DocFields;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -15,9 +16,16 @@ public class MockPhotonResult implements PhotonResult {
     final double[] coordinates = new double[]{42, 21};
     final double[] extent = new double[]{0, 1, 2, 3};
     final Map<String, String> localized = new HashMap<>();
+    double importance = 0.5;
     double score = 0.0;
 
     ObjectMapper mapper = new ObjectMapper();
+
+    public MockPhotonResult() {}
+
+    public MockPhotonResult(double importance) {
+        this.importance = importance;
+    }
 
     @Override
     public double getScore() {
@@ -37,7 +45,7 @@ public class MockPhotonResult implements PhotonResult {
 
     @Override
     public double getImportance() {
-        return 0.5;
+        return importance;
     }
 
     @Override
@@ -92,6 +100,11 @@ public class MockPhotonResult implements PhotonResult {
         return this;
     }
 
+    public MockPhotonResult putName(String lang, String value) {
+        putLocalized(DocFields.NAME, lang, value);
+        return this;
+    }
+
     public MockPhotonResult putLocalized(String key, String lang, String value) {
         localized.put(key + "||" + lang, value);
         return this;
@@ -105,4 +118,5 @@ public class MockPhotonResult implements PhotonResult {
         }
         return this;
     }
+
 }
