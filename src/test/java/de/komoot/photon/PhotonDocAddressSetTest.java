@@ -117,7 +117,7 @@ class PhotonDocAddressSetTest {
                 .satisfiesExactly(
                         d  -> assertDocWithHnrAndStreet(d, "50", "Nowhere"),
                         d2 -> assertDocWithHnrAndStreet(d2, "34/50", "Chaussee"));
-}
+    }
 
     @Test
     void testBlockAddress() {
