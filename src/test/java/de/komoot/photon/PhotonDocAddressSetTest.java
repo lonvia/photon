@@ -115,7 +115,7 @@ class PhotonDocAddressSetTest {
                 "place", "Nowhere",
                 "street", "Chaussee")))
                 .satisfiesExactly(
-                        d  -> assertDocWithHnrAndStreet(d, "50", "Nowhere"),
+                        d -> assertDocWithHnrAndStreet(d, "50", "Nowhere"),
                         d2 -> assertDocWithHnrAndStreet(d2, "34/50", "Chaussee"));
     }
 
