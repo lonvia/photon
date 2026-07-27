@@ -13,17 +13,19 @@ public class PhotonDocAddressSet implements Iterable<PhotonDoc> {
 
     private final List<PhotonDoc> docs = new ArrayList<>();
 
-   
     public PhotonDocAddressSet(PhotonDoc base, Map<String, String> address) {
         addPlaceAddress(base, address, "conscriptionnumber");
+        // Where the house number is split into a conscription and a street number (CZ, SK),
+        // 'housenumber' holds the combined form (e.g. '100/9'). Index that on the street: the
+        // house number analyzer splits it again, so both parts remain searchable on their own.
         addStreetAddress(base, address, "housenumber");
-
 
         if (docs.isEmpty()) {
             addGenericAddress(base, address, "housenumber");
         }
 
         if (docs.isEmpty() && base.isUsefulForIndex()) {
+            // Doesn't have housenumbers, so add the original document as the single document
             docs.add(base);
         }
     }
