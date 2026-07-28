@@ -15,10 +15,7 @@ public class PhotonDocAddressSet implements Iterable<PhotonDoc> {
 
     public PhotonDocAddressSet(PhotonDoc base, Map<String, String> address) {
         addPlaceAddress(base, address, "conscriptionnumber");
-        // Where the house number is split into a conscription and a street number (CZ, SK),
-        // 'housenumber' holds the combined form (e.g. '100/9'). Index that on the street: the
-        // house number analyzer splits it again, so both parts remain searchable on their own.
-        addStreetAddress(base, address, "housenumber");
+        addStreetAddress(base, address);
 
         if (docs.isEmpty()) {
             addGenericAddress(base, address, "housenumber");
@@ -49,11 +46,24 @@ public class PhotonDocAddressSet implements Iterable<PhotonDoc> {
         }
     }
 
-    private void addStreetAddress(PhotonDoc base, Map<String, String> address, @SuppressWarnings("SameParameterValue") String key) {
-        if (address.containsKey("street")) {
-            for (String hnr : splitHousenumber(address, key)) {
-                docs.add(new PhotonDoc(base).houseNumber(hnr));
-            }
+    private void addStreetAddress(PhotonDoc base, Map<String, String> address) {
+        if (!address.containsKey("street")) {
+            return;
+        }
+
+        // Where the house number is split into a conscription and a street number (CZ, SK),
+        // 'housenumber' holds the combined form (e.g. '100/9'). The house number analyzer splits
+        // it again, so both parts remain searchable on their own.
+        String[] housenumbers = splitHousenumber(address, "housenumber");
+
+        if (housenumbers.length == 0) {
+            // Be forgiving about addresses that only carry a street number. That is a tagging
+            // error, but a few hundred of them exist, mostly in Slovakia.
+            housenumbers = splitHousenumber(address, "streetnumber");
+        }
+
+        for (String hnr : housenumbers) {
+            docs.add(new PhotonDoc(base).houseNumber(hnr));
         }
     }
 
