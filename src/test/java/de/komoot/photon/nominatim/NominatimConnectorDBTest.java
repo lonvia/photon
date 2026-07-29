@@ -386,6 +386,46 @@ class NominatimConnectorDBTest {
                                 AddressType.COUNTRY, COUNTRY_NAMES
                         )));
     }
+
+    /**
+     * When the combined housenumber is tagged as well, then the street address uses the
+     * combined form while the place address keeps the conscription number.
+     */
+    @Test
+    void testObjectWithConscriptionNumberAndHousenumber() {
+        PlacexTestRow parent = PlacexTestRow.make_street("Main St").add(jdbc);
+        PlacexTestRow place = new PlacexTestRow("building", "yes")
+                .addr("housenumber", "99521/34")
+                .addr("streetnumber", "34")
+                .addr("conscriptionnumber", "99521")
+                .addr("place", "Village")
+                .addr("street", "Main St")
+                .parent(parent).add(jdbc);
+
+        place.addAddresslines(jdbc,
+                parent,
+                new PlacexTestRow("place", "city").name("Grand Central").ranks(16).add(jdbc));
+
+        readEntireDatabase();
+
+        importer.assertThatAllByRow(place)
+                .hasSize(2)
+                .anySatisfy(d -> assertThat(d)
+                        .hasFieldOrPropertyWithValue("houseNumber", "99521/34")
+                        .hasFieldOrPropertyWithValue("addressParts", Map.of(
+                                AddressType.STREET, Map.of("default", "Main St"),
+                                AddressType.CITY, Map.of("default", "Grand Central"),
+                                AddressType.COUNTRY, COUNTRY_NAMES
+                        )))
+                .anySatisfy(d -> assertThat(d)
+                        .hasFieldOrPropertyWithValue("houseNumber", "99521")
+                        .hasFieldOrPropertyWithValue("addressParts", Map.of(
+                                AddressType.STREET, Map.of("default", "Village"),
+                                AddressType.CITY, Map.of("default", "Grand Central"),
+                                AddressType.COUNTRY, COUNTRY_NAMES
+                        )));
+    }
+
     /**
      * Unnamed objects are ignored when they do not have a housenumber.
      */
