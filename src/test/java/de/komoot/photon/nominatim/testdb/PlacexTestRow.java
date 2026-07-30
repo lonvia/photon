@@ -29,6 +29,7 @@ public class PlacexTestRow {
     private String geometry;
     private String postcode;
     private String countryCode = "us";
+    private int admin_level = 15;
     private Double importance = null;
 
     public PlacexTestRow(String key, String value) {
@@ -88,6 +89,11 @@ public class PlacexTestRow {
         return this;
     }
 
+    public PlacexTestRow admin_level(int lvl) {
+        this.admin_level = lvl;
+        return this;
+    }
+
     public PlacexTestRow housenumber(int value) {
         addr("housenumber", Integer.toString(value));
         return this;
@@ -137,12 +143,12 @@ public class PlacexTestRow {
     public PlacexTestRow add(JdbcTemplate jdbc) {
         jdbc.update(
                 "INSERT INTO placex (place_id, parent_place_id, osm_type, osm_id,"
-                        + " class, type, rank_search, rank_address,"
+                        + " class, type, rank_search, rank_address, admin_level,"
                         + " centroid, geometry, name, extratags, country_code,"
                         + " importance, address, postcode, indexed_status)"
-                        + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FORMAT JSON, ? FORMAT JSON, ?, ?, ? FORMAT JSON, ?, 0)",
+                        + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FORMAT JSON, ? FORMAT JSON, ?, ?, ? FORMAT JSON, ?, 0)",
                 placeId, parentPlaceId, osmType, osmId,
-                key, value, rankSearch, rankAddress,
+                key, value, rankSearch, rankAddress, admin_level,
                 centroid, geometry, asJson(names), asJson(extraTags), countryCode,
                 importance, asJson(address), postcode);
         return this;
