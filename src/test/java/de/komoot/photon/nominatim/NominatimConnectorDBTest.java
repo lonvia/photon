@@ -536,4 +536,53 @@ class NominatimConnectorDBTest {
                 ));
 
     }
+
+    @Test
+    void testBoundariesHaveAdminLevelInExtraTags() {
+        var place = new PlacexTestRow("boundary", "administrative").name("Rio")
+                .ranks(16)
+                .country("us")
+                .admin_level(8)
+                .add(jdbc);
+
+        readEntireDatabase();
+
+        importer.assertThatByPlaceId(place.getPlaceString())
+                .hasFieldOrPropertyWithValue("extratags", Map.of("admin_level", "8"));
+
+    }
+
+    @Test
+    void testBoundariesHaveAdminLevelInExtraTagsWithExisting() {
+        var place = new PlacexTestRow("boundary", "administrative").name("Rio")
+                .ranks(16)
+                .country("us")
+                .admin_level(8)
+                .extraTag("foo", "bar")
+                .add(jdbc);
+
+        readEntireDatabase();
+
+        importer.assertThatByPlaceId(place.getPlaceString())
+                .hasFieldOrPropertyWithValue("extratags", Map.of(
+                        "admin_level", "8",
+                        "foo", "bar"));
+
+    }
+
+    @Test
+    void testBAdminLevelOfNonBoundariesIsIgnored() {
+        var place = new PlacexTestRow("boundary", "something").name("Rio")
+                .ranks(16)
+                .country("us")
+                .admin_level(8)
+                .extraTag("foo", "bar")
+                .add(jdbc);
+
+        readEntireDatabase();
+
+        importer.assertThatByPlaceId(place.getPlaceString())
+                .hasFieldOrPropertyWithValue("extratags", Map.of("foo", "bar"));
+
+    }
 }

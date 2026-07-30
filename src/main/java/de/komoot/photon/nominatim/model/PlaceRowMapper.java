@@ -35,13 +35,20 @@ public class PlaceRowMapper implements RowMapper<PhotonDoc> {
     public PhotonDoc mapRow(ResultSet rs, int rowNum) throws SQLException {
         String osmKey = rs.getString("class");
         String osmValue = rs.getString("type");
+
+        var extratags = dbutils.getMap(rs, "extratags");
+
+        if ("boundary".equals(osmKey) && "administrative".equals(osmValue)) {
+            extratags = new HashMap<>(extratags); // make a mutable copy
+            extratags.put("admin_level", String.valueOf(rs.getInt("admin_level")));
+        }
+
         if (!CATEGORY_PATTERN.matcher(osmKey).matches()) {
             osmKey = "place";
             osmValue = "yes";
         } else if (!CATEGORY_PATTERN.matcher(osmValue).matches()) {
             osmValue = "yes";
         }
-        var extratags = dbutils.getMap(rs, "extratags");
         String place = extratags.get("place");
         if (place == null) {
             place = extratags.get("linked_place");
@@ -96,9 +103,11 @@ public class PlaceRowMapper implements RowMapper<PhotonDoc> {
     }
 
     public String makeBaseSelect() {
-        var sql = "SELECT p.place_id, p.osm_type, p.osm_id, p.class, p.type, p.name, p.postcode," +
-                "       p.address, p.extratags, ST_Envelope(p.geometry) AS bbox," +
-                "       p.rank_address, p.rank_search, p.importance, p.country_code, p.centroid, " +
+        var sql = """
+                SELECT p.place_id, p.osm_type, p.osm_id, p.class, p.type, p.name, p.postcode,
+                       p.address, p.extratags, p.admin_level, ST_Envelope(p.geometry) AS bbox,
+                       p.rank_address, p.rank_search, p.importance, p.country_code, p.centroid,
+                """ +
                 dbutils.jsonArrayFromSelect(
                         "address_place_id",
                         "FROM place_addressline pa " +
