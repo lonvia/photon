@@ -538,6 +538,33 @@ class NominatimConnectorDBTest {
     }
 
     @Test
+    void testPostcodeWithSpaces() {
+        var parent = new PlacexTestRow("place", "city").name("Rio")
+                .ranks(16)
+                .country("nl")
+                .add(jdbc);
+        var postcode = new PostcodeLocationTestRow("33XV 46", "nl")
+                .geometry("POLYGON((-10.999 33.999, -11.001 34.001, -11.001 33.999, -10.999 33.999))")
+                .centroid(-11, 34)
+                .relation(55)
+                .parent(parent.getPlaceId())
+                .add(jdbc);
+
+        readEntireDatabase();
+
+        importer.assertThatByPlaceId(postcode.getPlaceString())
+                .hasFieldOrPropertyWithValue("osmId", 55L)
+                .hasFieldOrPropertyWithValue("tagKey", "place")
+                .hasFieldOrPropertyWithValue("tagValue", "postcode")
+                .hasFieldOrPropertyWithValue("postcode", null)
+                .hasFieldOrPropertyWithValue("name", Map.of(
+                        "default", "33XV 46",
+                        "alt", "33XV46"))
+                ;
+
+    }
+
+    @Test
     void testBoundariesHaveAdminLevelInExtraTags() {
         var place = new PlacexTestRow("boundary", "administrative").name("Rio")
                 .ranks(16)
