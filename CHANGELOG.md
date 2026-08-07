@@ -3,15 +3,16 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased]
+## [1.3.0] - 2026-08-07
 
-* fix missing HTTP request-latency histogram buckets in Prometheus metrics: the
-  `http.server.requests` timer now publishes percentile histograms, so
-  `http_server_requests_seconds_bucket` and `histogram_quantile()` p95/p99
-  panels work again
-* note: a previous Javalin upgrade renamed the request timer from
-  `jetty.server.requests` to `http.server.requests`; repoint dashboards and
-  alerts from `jetty_server_requests_seconds*` to `http_server_requests_seconds*`
+* scale down importance of lower ranked places when importing from Nominatim
+* tweak rematching algorithm to give name match larger weight
+* improve exporting of streetnumber addresses to match usage (thanks @barasoukup)
+* export admin_level tag from Nominatim into extratags
+* improve searchability of postcodes with optional spaces and dashes
+* switch Nominatim export to use computed postcode instead of addr:postcode
+* fix missing HTTP request-latency histogram buckets in Prometheus metrics
+  (thanks @henrik242)
 
 ## [1.2.1] - 2026-06-30
 
