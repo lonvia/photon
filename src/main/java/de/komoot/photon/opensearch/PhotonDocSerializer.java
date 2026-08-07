@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import de.komoot.photon.DatabaseProperties;
 import de.komoot.photon.PhotonDoc;
 import de.komoot.photon.nominatim.model.AddressType;
+import de.komoot.photon.nominatim.model.PostcodeUtils;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.locationtech.jts.geom.Envelope;
@@ -61,6 +62,10 @@ public class PhotonDocSerializer extends StdSerializer<PhotonDoc> {
         if (value.getPostcode() != null) {
             gen.writeStringField(DocFields.POSTCODE, value.getPostcode());
             termCollector.add(value.getPostcode(), 2);
+            var altPostcode = PostcodeUtils.postcodeAltName(value.getPostcode());
+            if (altPostcode != null) {
+                termCollector.add(altPostcode, 2);
+            }
         }
 
         if (isNamed) {

@@ -1,6 +1,7 @@
 package de.komoot.photon.nominatim.model;
 
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
@@ -9,9 +10,15 @@ import java.util.Map;
 public class PostcodeUtils {
     private PostcodeUtils() {}
 
-    static NameMap postcodeToName(String postcode) {
+    public static @Nullable String postcodeAltName(String postcode) {
         String shortPostcode = postcode.replaceAll("[ -]", "");
-        if (shortPostcode.length() != postcode.length()) {
+
+        return shortPostcode.length() == postcode.length() ? null : shortPostcode;
+    }
+
+    public static NameMap postcodeToName(String postcode) {
+        String shortPostcode = postcodeAltName(postcode);
+        if (shortPostcode != null) {
             return NameMap.makeForPlace(Map.of(
                     "name", postcode,
                     "alt_name", shortPostcode

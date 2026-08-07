@@ -1,5 +1,6 @@
 package de.komoot.photon.searcher;
 
+import de.komoot.photon.nominatim.model.PostcodeUtils;
 import de.komoot.photon.opensearch.DocFields;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -103,7 +104,11 @@ public class QueryReranker implements Consumer<PhotonResult> {
         mapNames(result.getLocalised(DocFields.STATE, language), resultTerms);
         mapNames(result.getLocalised(DocFields.COUNTY, language), resultTerms);
         mapNames(result.getLocalised(DocFields.DISTRICT, language), resultTerms);
-        mapNames((String) result.get(DocFields.POSTCODE), resultTerms);
+        var postcode = (String) result.get(DocFields.POSTCODE);
+        if (postcode != null) {
+            mapNames(postcode, resultTerms);
+            mapNames(PostcodeUtils.postcodeAltName(postcode), resultTerms);
+        }
         mapNames(result.getLocalised(DocFields.CITY, "default"), resultTerms);
         mapNames(result.getLocalised(DocFields.STATE, "default"), resultTerms);
         mapNames(result.getLocalised(DocFields.COUNTY, "default"), resultTerms);
