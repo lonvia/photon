@@ -187,7 +187,7 @@ public class PhotonDoc {
         return this;
     }
 
-    public PhotonDoc postcode(String postcode) {
+    public PhotonDoc postcode(@Nullable String postcode) {
         this.postcode = postcode;
         return this;
     }

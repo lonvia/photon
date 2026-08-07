@@ -73,6 +73,7 @@ public class NominatimImporter extends NominatimConnector {
 
                     doc.addAddresses(addressCache.getAddressList(rs.getString("addresslines")));
                     doc.addAddresses(address, dbProperties.getLanguages()); // take precedence over computed address
+                    doc.postcode(rs.getString("postcode")); // ignore all other sources of postcode
                     doc.setCountry(cnames);
 
                     importThread.addDocument(new PhotonDocAddressSet(doc, address));
@@ -101,6 +102,7 @@ public class NominatimImporter extends NominatimConnector {
                     }
                     doc.addAddresses(addressCache.getAddressList(rs.getString("addresslines")));
                     doc.addAddresses(address, dbProperties.getLanguages()); // take precedence over computed address
+                    doc.postcode(rs.getString("postcode")); // ignore all other sources of postcode
                     doc.setCountry(cnames);
 
                     importThread.addDocument(new PhotonDocAddressSet(doc, address));
@@ -123,6 +125,7 @@ public class NominatimImporter extends NominatimConnector {
                     }
                     doc.addAddresses(addressCache.getAddressList(rs.getString("addresslines")));
                     doc.addAddresses(dbutils.getMap(rs, "address"), dbProperties.getLanguages());
+                    doc.postcode(rs.getString("postcode")); // ignore all other sources of postcode
                     
                     doc.setCountry(cnames);
 

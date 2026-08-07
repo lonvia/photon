@@ -3,18 +3,16 @@ package de.komoot.photon.nominatim.model;
 import de.komoot.photon.PhotonDoc;
 import de.komoot.photon.nominatim.DBDataAdapter;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /**
  * Access to postcode tables for Nominatim 5.3+.
  * <p/>
- * This table is now the only source for postcodes nad may contain full
+ * This table is now the only source for postcodes and may contain full
  * geometries for postcode areas.
  */
 @NullMarked
@@ -35,7 +33,7 @@ public class PostcodeRowMapper implements NominatimTableAccessor {
                 osmId == null ? null : "R",
                 osmId == null ? -1 : (Long) osmId,
                 "place", "postcode")
-                .names(NameMap.makeForPlace(Map.of("name", rs.getString("postcode")), List.of()))
+                .names(PostcodeUtils.postcodeToName(rs.getString("postcode")))
                 .centroid(Objects.requireNonNull(dbutils.extractGeometry(rs, "centroid")))
                 .countryCode(rs.getString("country_code"))
                 .categories(List.of("osm.place.postcode"))

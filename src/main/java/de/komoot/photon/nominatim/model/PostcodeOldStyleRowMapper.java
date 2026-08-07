@@ -7,7 +7,6 @@ import org.jspecify.annotations.NullMarked;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Access to postcode tables prior to Nominatim 5.3.
@@ -30,7 +29,7 @@ public class PostcodeOldStyleRowMapper implements NominatimTableAccessor {
                 Long.toString(rs.getLong("place_id")),
                 null, -1,
                 "place", "postcode")
-                .names(NameMap.makeForPlace(Map.of("name", rs.getString("postcode")), List.of()))
+                .names(PostcodeUtils.postcodeToName(rs.getString("postcode")))
                 .centroid(centroid)
                 .countryCode(rs.getString("country_code"))
                 .categories(List.of("osm.place.postcode"))
