@@ -119,6 +119,7 @@ public class NominatimUpdater extends NominatimConnector {
             // Add address last, so it takes precedence.
             final var address = dbutils.getMap(rs, "address");
             doc.addAddresses(address, dbProperties.getLanguages());
+            doc.postcode(rs.getString("postcode")); // ignore all other sources of postcode
 
             assert countryNames != null;
             doc.setCountry(countryNames.get(rs.getString("country_code")));
@@ -143,6 +144,7 @@ public class NominatimUpdater extends NominatimConnector {
             doc.addAddresses(
                     addressCache.getOrLoadAddressList(template, rs.getString("addresslines")));
             doc.addAddresses(dbutils.getMap(rs, "address"), dbProperties.getLanguages());
+            doc.postcode(rs.getString("postcode")); // ignore all other sources of postcode
             assert countryNames != null;
             doc.setCountry(countryNames.get(rs.getString("country_code")));
 

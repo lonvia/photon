@@ -478,12 +478,12 @@ class NominatimConnectorDBTest {
     }
 
     @Test
-    void testPreferPostcodeFromAddress() {
+    void testPreferPostcodeFromPostcodeField() {
         PlacexTestRow parent = PlacexTestRow.make_street("Main St").add(jdbc);
         PlacexTestRow place = new PlacexTestRow("building", "yes")
                 .addr("housenumber", "34")
-                .addr("postcode", "45-234")
-                .postcode("XXX")
+                .addr("postcode", "XXX")
+                .postcode("45-234")
                 .parent(parent).add(jdbc);
         PlacexTestRow postcode = new PlacexTestRow("boundary", "postal_code")
                 .name("ref", "1234XZ").ranks(11).add(jdbc);

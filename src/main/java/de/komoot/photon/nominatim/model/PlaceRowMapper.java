@@ -69,8 +69,7 @@ public class PlaceRowMapper implements RowMapper<PhotonDoc> {
                 .bbox(dbutils.extractGeometry(rs, "bbox"))
                 .countryCode(rs.getString("country_code"))
                 .centroid(Objects.requireNonNull(dbutils.extractGeometry(rs, "centroid")))
-                .addressType(addressType)
-                .postcode(rs.getString("postcode"));
+                .addressType(addressType);
 
         if (useGeometryColumn) {
             try {

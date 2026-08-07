@@ -19,8 +19,7 @@ public class OsmlineRowMapper implements RowMapper<PhotonDoc> {
                 "place", "house_number")
                 .countryCode(rs.getString("country_code"))
                 .categories(List.of("osm.place.house_number"))
-                .addressType(AddressType.HOUSE)
-                .postcode(rs.getString("postcode"));
+                .addressType(AddressType.HOUSE);
     }
 
     public String makeBaseQuery(DBDataAdapter dbutils) {
