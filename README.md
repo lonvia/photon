@@ -99,8 +99,9 @@ database dump, then you need to swap out the databases atomically:
 
 This unfortunately means you need twice the space of the database for updates.
 
-_WARNING: Never unpack the database in place of the old one. This will lead
-to corrupted data._
+> [!CAUTION]
+> Never unpack the database in place of the old one. This will lead
+> to corrupted data.
 
 
 ## Usage

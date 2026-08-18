@@ -84,14 +84,16 @@ leads to cryptic errors in OpenSearch.
 
 ### Importing from a Nominatim database
 
-_Note: Support for pgpass file available for Photon>=1.4.0._
+> [!NOTE]
+> Support for pgpass file available for Photon>=1.4.0.
 
 The default mode is to import the database from a Nominatim PostgreSQL database.
 To learn about Nominatim and how to set up a database refer
 to its [installation documentation](https://nominatim.org/release-docs/latest/admin/Installation/).
 
-_Important: make sure that updates are stopped on the Nominatim database
-when running the photon import or results are unpredictable._
+> [!CAUTION]
+> Make sure that updates are stopped on the Nominatim database
+> when running the photon import or results are unpredictable.
 
 photon will try to connect to a PostgreSQL server in the default location
 (localhost at port 5432) and look for a database 'nominatim'. You can
@@ -134,6 +136,7 @@ before starting the import with the following command:
 
 Adapt the database name as required.
 
+
 ### Importing from a dump file
 
 To load the photon database from a dump file (for example from the
@@ -170,10 +173,11 @@ When available, photon can also import full geometries instead of just a
 centroid and bounding box. These geometries will then be returned with the
 response. To enable this, use the **-full-geometries** switch.
 
-_Hint: if these filtering options are not sufficient, it is always possible
-to preprocess the json dump before feeding it to photon. Have a look at the
-[dump spec](json-dump-format-0.1.0.md) to learn about the format of this
-file._
+> [!TIP]
+> If these filtering options are not sufficient, it is always possible
+> to preprocess the json dump before feeding it to photon. Have a look at the
+> [dump spec](json-dump-format-0.1.0.md) to learn about the format of this
+> file.
 
 ### Reverse-only mode
 
@@ -242,12 +246,13 @@ export NOMINATIM_DIR=/srv/nominatim/...
  
 where `NOMINATIM_DIR` is the project directory of your Nominatim installation.
 
-_WARNING: never make the /nominatim-update endpoint available on a public
-network. While the endpoint is safe to be triggered by random requests,
-updates nonetheless create load on your database and running updates while
-Nominatim updates are in progress may lead to inconsistencies in the photon
-database. You therefore would want to be able to control when exactly an
-update is run._
+> [!WARNING]
+> Never make the /nominatim-update endpoint available on a public
+> network. While the endpoint is safe to be triggered by random requests,
+> updates nonetheless create load on your database and running updates while
+> Nominatim updates are in progress may lead to inconsistencies in the photon
+> database. You therefore would want to be able to control when exactly an
+> update is run.
 
 ## Exporting Data to a JSON Dump
 
