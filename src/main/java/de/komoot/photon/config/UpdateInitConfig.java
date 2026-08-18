@@ -8,7 +8,7 @@ import org.jspecify.annotations.Nullable;
 public class UpdateInitConfig {
     public static final String GROUP = "Initialisation options";
 
-    @Parameter(names = "-import-user", category = GROUP, description = """
+    @Parameter(names = "-import-user", category = GROUP, validateWith = IdentifierValidator.class, description = """
             Name of PostgreSQL user running the updates
             """)
     @Nullable private String importUser = null;
