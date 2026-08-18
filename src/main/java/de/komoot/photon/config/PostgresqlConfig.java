@@ -3,12 +3,13 @@ package de.komoot.photon.config;
 import com.beust.jcommander.Parameter;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+import org.postgresql.ds.PGSimpleDataSource;
 
 @NullMarked
 public class PostgresqlConfig {
     public static final String GROUP = "PostgreSQL options";
 
-    @Parameter(names = "-host", category = GROUP, placeholder = "HOST", description = """
+    @Parameter(names = "-host", category = GROUP, placeholder = "HOST", validateWith = HostNameValidator.class, description = """
             Hostname of the PostgreSQL database
             """)
     private String host = "127.0.0.1";
@@ -26,35 +27,33 @@ public class PostgresqlConfig {
     @Parameter(names = "-user", category = GROUP, placeholder = "NAME", description = """
             User for the PostgreSQL database
             """)
-    private String user = "nominatim";
+    @Nullable private String user = null;
 
     @Parameter(names = "-password", category = GROUP, placeholder = "PASSWORD", description = """
             Password for the PostgreSQL user
             """)
     @Nullable private String password = null;
 
-    public String getHost() {
-        return this.host;
-    }
+    public PGSimpleDataSource getDataSource() {
+        var dataSource = new PGSimpleDataSource();
 
-    public int getPort() {
-        return this.port;
-    }
+        dataSource.setDatabaseName(database);
+        dataSource.setServerNames(new String[]{host});
+        dataSource.setPortNumbers(new int[]{port});
 
-    public String getDatabase() {
-        return this.database;
-    }
+        if (user != null) {
+            dataSource.setUser(user);
+        }
+        if (password != null) {
+            dataSource.setPassword(password);
+        }
 
-    public String getUser() {
-        return this.user;
-    }
-
-    @Nullable public String getPassword() {
-        return this.password;
+        return dataSource;
     }
 
     @Override
     public String toString() {
-        return String.format("database %s at %s:%d (user: %s)", database, host, port, user);
+        return String.format("database %s at %s:%d (user: %s)",
+                database, host, port, user == null ? "-" : user);
     }
 }

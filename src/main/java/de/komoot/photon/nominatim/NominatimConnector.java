@@ -5,7 +5,6 @@ import de.komoot.photon.config.PostgresqlConfig;
 import de.komoot.photon.nominatim.model.AddressRow;
 import de.komoot.photon.nominatim.model.AddressType;
 import de.komoot.photon.nominatim.model.NameMap;
-import org.apache.commons.dbcp2.BasicDataSource;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -27,17 +26,7 @@ public class NominatimConnector {
     @Nullable private Boolean hasNewPostcodeLocationsTable;
 
     protected NominatimConnector(PostgresqlConfig cfg, DBDataAdapter dataAdapter, DatabaseProperties dbProperties) {
-        BasicDataSource dataSource = new BasicDataSource();
-
-        dataSource.setUrl(String.format("jdbc:postgresql://%s:%d/%s",
-                cfg.getHost(), cfg.getPort(), cfg.getDatabase()));
-        dataSource.setUsername(cfg.getUser());
-        if (cfg.getPassword() != null) {
-            dataSource.setPassword(cfg.getPassword());
-        }
-
-        // Keep disabled or server-side cursors won't work.
-        dataSource.setDefaultAutoCommit(false);
+        var dataSource = cfg.getDataSource();
 
         txTemplate = new TransactionTemplate(new DataSourceTransactionManager(dataSource));
 
@@ -46,7 +35,6 @@ public class NominatimConnector {
 
         dbutils = dataAdapter;
         this.dbProperties = dbProperties;
-
     }
 
     @Nullable
