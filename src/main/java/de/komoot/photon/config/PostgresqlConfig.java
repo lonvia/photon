@@ -30,7 +30,7 @@ public class PostgresqlConfig {
     @Nullable private String user = null;
 
     @Parameter(names = "-password", category = GROUP, placeholder = "PASSWORD", description = """
-            Password for the PostgreSQL user
+            Password for the PostgreSQL user (using parameter not recommended, use a pgpass file instead)
             """)
     @Nullable private String password = null;
 
