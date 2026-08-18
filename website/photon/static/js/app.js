@@ -1,6 +1,6 @@
 var searchPoints = L.geoJson(null, {
         onEachFeature: function (feature, layer) {
-            layer.bindPopup(feature.properties.name);
+            layer.bindPopup(document.createTextNode(feature.properties.name || ''));
         }
     });
 function showSearchPoints (geojson) {
