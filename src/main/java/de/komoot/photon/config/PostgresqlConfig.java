@@ -1,15 +1,21 @@
 package de.komoot.photon.config;
 
 import com.beust.jcommander.Parameter;
+import org.apache.commons.dbcp2.DataSourceConnectionFactory;
+import org.apache.commons.dbcp2.PoolableConnectionFactory;
+import org.apache.commons.dbcp2.PoolingDataSource;
+import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.postgresql.ds.PGSimpleDataSource;
+
+import javax.sql.DataSource;
 
 @NullMarked
 public class PostgresqlConfig {
     public static final String GROUP = "PostgreSQL options";
 
-    @Parameter(names = "-host", category = GROUP, placeholder = "HOST", validateWith = HostNameValidator.class, description = """
+    @Parameter(names = "-host", category = GROUP, placeholder = "HOST", validateWith =  HostNameValidator.class, description = """
             Hostname of the PostgreSQL database
             """)
     private String host = "127.0.0.1";
@@ -34,7 +40,7 @@ public class PostgresqlConfig {
             """)
     @Nullable private String password = null;
 
-    public PGSimpleDataSource getDataSource() {
+    public DataSource getDataSource() {
         var dataSource = new PGSimpleDataSource();
 
         dataSource.setDatabaseName(database);
@@ -48,7 +54,13 @@ public class PostgresqlConfig {
             dataSource.setPassword(password);
         }
 
-        return dataSource;
+        var connFactory = new PoolableConnectionFactory(new DataSourceConnectionFactory(dataSource), null);
+        var connPool = new GenericObjectPool<>(connFactory);
+
+        connFactory.setPool(connPool);
+        connFactory.setDefaultAutoCommit(false);
+
+        return new PoolingDataSource<>(connPool);
     }
 
     @Override
