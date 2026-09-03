@@ -51,7 +51,6 @@ public class IndexSettingBuilder {
     }
 
     public void updateIndex(OpenSearchClient client, String indexName) throws IOException {
-        addDefaultSettings();
         updateSynonymFilters();
 
         client.indices().close(req -> req.index(indexName));
