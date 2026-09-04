@@ -84,22 +84,45 @@ leads to cryptic errors in OpenSearch.
 
 ### Importing from a Nominatim database
 
-The default mode is to import the database from a Nominatim PostgreSQL data.
-To learn about Nominatim and how to set up a database refer
-to the [installation documentation](https://nominatim.org/release-docs/latest/admin/Installation/).
+> [!NOTE]
+> Support for pgpass file available for Photon>=1.4.0.
 
-_Important: make sure that updates are stopped on the Nominatim database
-when running the photon import or results are unpredictable._
+The default mode is to import the database from a Nominatim PostgreSQL database.
+To learn about Nominatim and how to set up a database refer
+to its [installation documentation](https://nominatim.org/release-docs/latest/admin/Installation/).
+
+> [!CAUTION]
+> Make sure that updates are stopped on the Nominatim database
+> when running the photon import or results are unpredictable.
 
 photon will try to connect to a PostgreSQL server in the default location
-(localhost at port 5432) using the user 'nominatim' and look for a database
-'nominatim'. You can customize this with the parameters **-host**, **-port**,
-**-user**, **-password**, and **-database**.
+(localhost at port 5432) and look for a database 'nominatim'. You can
+customize this with the parameters **-host**, **-port**,
+**-user**, **-password**, and **-database** and/or supply a pgpass file
 
 You likely will need to enable password authentication to the PostgreSQL database.
 To do so, you can set a password for the database user like this:
 
     psql -d nominatim -c "ALTER USER www-data WITH ENCRYPTED PASSWORD 'mysecretpassword'"
+
+While you can then give the password to Photon on the command line, this is
+_not recommended_ for security reasons. Use a
+[pgpass file](https://www.postgresql.org/docs/current/libpq-pgpass.html)
+instead: in the home directory of the user running the import command
+create a file `.pgpass` and add the following line:
+
+```
+127.0.0.1:5432:nominatim:www-data:mysecretpassword
+```
+
+Naturally, you need to adapt the user name and password to what you actually
+use. If necessary, also change the database name `nominatim`. You can now
+leave out -user and -password parameters, when running Photon. They will
+be picked up from the file when omitted.
+
+If you need to put the pgpass file in a different location, then you may
+specify the location by either setting the PGPASSFILE environment variable
+or using the property `-Dorg.postgresql.pgpassfile=` on the command line.
 
 The PostgreSQL user only needs read access to the query tables of the
 Nominatim database (similar to
@@ -112,6 +135,7 @@ before starting the import with the following command:
     psql -d nominatim -c 'CREATE INDEX ON placex(country_code)'
 
 Adapt the database name as required.
+
 
 ### Importing from a dump file
 
@@ -149,10 +173,11 @@ When available, photon can also import full geometries instead of just a
 centroid and bounding box. These geometries will then be returned with the
 response. To enable this, use the **-full-geometries** switch.
 
-_Hint: if these filtering options are not sufficient, it is always possible
-to preprocess the json dump before feeding it to photon. Have a look at the
-[dump spec](json-dump-format-0.1.0.md) to learn about the format of this
-file._
+> [!TIP]
+> If these filtering options are not sufficient, it is always possible
+> to preprocess the json dump before feeding it to photon. Have a look at the
+> [dump spec](json-dump-format-0.1.0.md) to learn about the format of this
+> file.
 
 ### Reverse-only mode
 
@@ -221,12 +246,13 @@ export NOMINATIM_DIR=/srv/nominatim/...
  
 where `NOMINATIM_DIR` is the project directory of your Nominatim installation.
 
-_WARNING: never make the /nominatim-update endpoint available on a public
-network. While the endpoint is safe to be triggered by random requests,
-updates nonetheless create load on your database and running updates while
-Nominatim updates are in progress may lead to inconsistencies in the photon
-database. You therefore would want to be able to control when exactly an
-update is run._
+> [!WARNING]
+> Never make the /nominatim-update endpoint available on a public
+> network. While the endpoint is safe to be triggered by random requests,
+> updates nonetheless create load on your database and running updates while
+> Nominatim updates are in progress may lead to inconsistencies in the photon
+> database. You therefore would want to be able to control when exactly an
+> update is run.
 
 ## Exporting Data to a JSON Dump
 
