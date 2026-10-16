@@ -49,6 +49,9 @@ public class App {
             System.exit(1);
         }
 
+        cli.getImportFilterConfig().getVariantConfig();
+        System.exit(2);
+
         try {
             if (runPhoton(command, cli)) {
                 shutdown();
@@ -157,6 +160,7 @@ public class App {
             LOGGER.error("Cannot initialize database", ex);
             return;
         }
+
 
         final int maxConcurrentBulks = Math.max(1, cli.getGeneralConfig().getThreads());
         final var importThread = new ImportThread(esServer.createImporter(dbProperties, maxConcurrentBulks, true));

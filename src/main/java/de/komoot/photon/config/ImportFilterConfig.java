@@ -3,9 +3,12 @@ package de.komoot.photon.config;
 import com.beust.jcommander.Parameter;
 import de.komoot.photon.ConfigExtraTags;
 import de.komoot.photon.DatabaseProperties;
+import de.komoot.photon.variants.VariantsProcessor;
+import de.komoot.photon.variants.VariantsReader;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -42,6 +45,11 @@ public class ImportFilterConfig {
             Set up database for reverse geocoding only""")
     private boolean reverseOnly = false;
 
+    @Parameter(names = "-variants", category = GROUP, placeholder = "FILE", description = """
+            Configuration for name variants (abbreviations and spelling variants).
+            """)
+    @Nullable private String variantConfigFile;
+
     public Set<String> getLanguages() {
         return new HashSet<>(languages);
     }
@@ -58,6 +66,14 @@ public class ImportFilterConfig {
 
     public boolean getImportGeometryColumn() {
         return importGeometryColumn;
+    }
+
+    public VariantsProcessor getVariantConfig() {
+        if (variantConfigFile == null) {
+            return new VariantsProcessor();
+        }
+
+        return new VariantsReader().readConfig(new File(variantConfigFile)).getProcessor();
     }
 
     public DatabaseProperties getDatabaseProperties() {
