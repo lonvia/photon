@@ -1,44 +1,45 @@
-- applies-to: name
-  type: lexical
-  rules:
-      - !include variants/variants-bg.yaml
-      - !include variants/variants-ca.yaml
-      - !include variants/variants-cs.yaml
-      - !include variants/variants-da.yaml
-      - !include variants/variants-de.yaml
-      - !include variants/variants-el.yaml
-      - !include variants/variants-en.yaml
-      - !include variants/variants-es.yaml
-      - !include variants/variants-et.yaml
-      - !include variants/variants-eu.yaml
-      - !include variants/variants-fi.yaml
-      - !include variants/variants-fr.yaml
-      - !include variants/variants-gl.yaml
-      - !include variants/variants-hu.yaml
-      - !include variants/variants-it.yaml
-      - !include variants/variants-mg.yaml
-      - !include variants/variants-ms.yaml
-      - !include variants/variants-nl.yaml
-      - !include variants/variants-no.yaml
-      - !include variants/variants-pl.yaml
-      - !include variants/variants-pt.yaml
-      - !include variants/variants-ro.yaml
-      - !include variants/variants-ru.yaml
-      - !include variants/variants-sk.yaml
-      - !include variants/variants-sl.yaml
-      - !include variants/variants-sv.yaml
-      - !include variants/variants-tr.yaml
-      - !include variants/variants-uk.yaml
-      - !include variants/variants-vi.yaml
-- applies-to: name
-  type: mutation
-  mode: append
-  scope: global
-  rules:
-    - lang: de
-      mutations:
-          - pattern: '([äöü])'
-            replacement: '\1e'
-    - mutations:
-          - pattern: "`"
-            replacement: " "
+variants:
+    - applies-to: name
+      type: lexical
+      rules:
+          - file:variants/variants-bg.yaml
+          - file:variants/variants-ca.yaml
+          - file:variants/variants-cs.yaml
+          - file:variants/variants-da.yaml
+          - file:variants/variants-de.yaml
+          - file:variants/variants-el.yaml
+          - file:variants/variants-en.yaml
+          - file:variants/variants-es.yaml
+          - file:variants/variants-et.yaml
+          - file:variants/variants-eu.yaml
+          - file:variants/variants-fi.yaml
+          - file:variants/variants-fr.yaml
+          - file:variants/variants-gl.yaml
+          - file:variants/variants-hu.yaml
+          - file:variants/variants-it.yaml
+          - file:variants/variants-mg.yaml
+          - file:variants/variants-ms.yaml
+          - file:variants/variants-nl.yaml
+          - file:variants/variants-no.yaml
+          - file:variants/variants-pl.yaml
+          - file:variants/variants-pt.yaml
+          - file:variants/variants-ro.yaml
+          - file:variants/variants-ru.yaml
+          - file:variants/variants-sk.yaml
+          - file:variants/variants-sl.yaml
+          - file:variants/variants-sv.yaml
+          - file:variants/variants-tr.yaml
+          - file:variants/variants-uk.yaml
+          - file:variants/variants-vi.yaml
+    - applies-to: name
+      type: mutation
+      mode: append
+      scope: global
+      rules:
+        - lang: de
+          mutations:
+              - pattern: '([äöü])'
+                replacement: '\1e'
+        - mutations:
+              - pattern: "`"
+                replacement: " "
