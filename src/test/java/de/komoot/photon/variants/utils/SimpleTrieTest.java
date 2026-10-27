@@ -6,9 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -44,9 +42,13 @@ class SimpleTrieTest {
 
     private SimpleTrie<String> mkTrie(String listInput) {
         var trie = new SimpleTrie<String>();
+        var entries = new HashMap<>();
         for (var s : listInput.split(",")) {
             trie.put(s, s);
+            entries.put(s, s);
         }
+
+        assertThat(trie).containsExactlyInAnyOrder(entries.entrySet().toArray(new Map.Entry[]{}));
 
         return trie;
     }
@@ -55,10 +57,13 @@ class SimpleTrieTest {
     void testEmptyTrie() {
         var t = new SimpleTrie<Integer>();
 
+        assertThat(t.isEmpty()).isTrue();
         assertThat(t.longestPrefix("", 0)).isNull();
         assertThat(t.longestPrefix("abc", 0)).isNull();
         assertThat(t.longestPrefix("abc", 1)).isNull();
         assertThat(t.longestPrefix("abc", 5)).isNull();
+
+        assertThat(t).containsExactly();
     }
 
     @Test
@@ -66,11 +71,16 @@ class SimpleTrieTest {
         var t = new SimpleTrie<Integer>();
         t.put("abc", 100);
 
+        assertThat(t.isEmpty()).isFalse();
         assertThat(t.longestPrefix("", 0)).isNull();
         assertThat(t.longestPrefix("ab", 0)).isNull();
         assertLongestPrefix(t,"abc", 0).containsExactly(100, 3);
         assertLongestPrefix(t,"abcde", 0).containsExactly(100, 3);
         assertLongestPrefix(t,"aabcd", 1).containsExactly(100, 4);
+
+        assertThat(t).containsExactlyInAnyOrder(
+                new AbstractMap.SimpleEntry<>("abc", 100)
+        );
     }
 
     static Stream<String> testDistinctWordsTrie() { return permutate("ab", "123"); }
@@ -80,6 +90,7 @@ class SimpleTrieTest {
     void testDistinctWordsTrie(String listInput) {
         var t = mkTrie(listInput);
 
+        assertThat(t.isEmpty()).isFalse();
         assertLongestPrefix(t,"abba", 0).containsExactly("ab", 2);
         assertLongestPrefix(t,"123", 0).containsExactly("123", 3);
         assertLongestPrefix(t,"ab123", 2).containsExactly("123", 5);
@@ -94,6 +105,7 @@ class SimpleTrieTest {
     void testSamePrefixTrie(String listInput) {
         var t = mkTrie(listInput);
 
+        assertThat(t.isEmpty()).isFalse();
         assertLongestPrefix(t,"house", 0).containsExactly("house", 5);
         assertLongestPrefix(t,"hord", 0).containsExactly("hord", 4);
         assertLongestPrefix(t,"horder", 0).containsExactly("hord", 4);
@@ -107,6 +119,7 @@ class SimpleTrieTest {
     void testContainedWordsTrie(String listInput) {
         var t = mkTrie(listInput);
 
+        assertThat(t.isEmpty()).isFalse();
         assertLongestPrefix(t,"pen", 0).containsExactly("pen", 3);
         assertLongestPrefix(t,"pens", 0).containsExactly("pens", 4);
         assertLongestPrefix(t,"penta", 0).containsExactly("penta", 5);

@@ -34,7 +34,7 @@ public class RuleListDeserializer extends StdDeserializer<LexicalProcessorConfig
                             .readerForListOf(LexicalRulesConfig.class)
                             .readValue(baseDir.resolve(p.getValueAsString().substring(5))));
                 } else {
-                    rules.add(YAMLMapper.shared().readValue(p, LexicalRulesConfig.class));
+                    rules.add(ctxt.readValue(p, LexicalRulesConfig.class));
                 }
             }
         }

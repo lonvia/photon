@@ -3,19 +3,22 @@ package de.komoot.photon.variants.utils;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static java.lang.Integer.min;
 
 @NullMarked
-public class SimpleTrie<T> {
+public class SimpleTrie<T> implements Iterable<Map.Entry<String, T>> {
 
     public record Match<T>(T value, int endpos) {}
 
     private Map<Character, SimpleTrie<T> > children = new HashMap<>();
     private String prefix = "";
     @Nullable private T payload;
+
+    public boolean isEmpty() {
+        return children.isEmpty() && payload == null;
+    }
 
     public void put(String key, T value) {
         if (key.isEmpty()) {
@@ -98,4 +101,62 @@ public class SimpleTrie<T> {
 
         return result;
     }
+
+    public Iterator<Map.Entry<String, T>> iterator() {
+        return new TrieIterator<>(this, "");
+    }
+
+    private static class TrieIterator<T> implements Iterator<Map.Entry<String, T>> {
+        private final Iterator<Map.Entry<Character, SimpleTrie<T>>> childIterator;
+        String prefix;
+        @Nullable TrieIterator<T> current;
+        private Map.@Nullable Entry<String, T> nextItem;
+
+        public TrieIterator(SimpleTrie<T> root, String prefix) {
+            childIterator = root.children.entrySet().iterator();
+            this.prefix = prefix + root.prefix;
+            if (root.payload != null) {
+                nextItem = new AbstractMap.SimpleImmutableEntry<>(this.prefix, root.payload);
+            } else {
+                nextItem = null;
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            while (nextItem == null) {
+                if (current == null) {
+                    if (!childIterator.hasNext()) {
+                        return false;
+                    }
+
+                    var nextEntry = childIterator.next();
+                    current = new TrieIterator<>(nextEntry.getValue(), prefix + nextEntry.getKey());
+                }
+
+                if (current.hasNext()) {
+                    nextItem = current.next();
+                } else {
+                    current = null;
+                }
+            }
+
+            return true;
+        }
+
+        @Override
+        public Map.Entry<String, T> next() {
+            if (nextItem == null) {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                assert nextItem != null;
+            }
+            var out = nextItem;
+            nextItem = null;
+
+            return out;
+        }
+    }
+
 }

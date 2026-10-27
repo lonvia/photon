@@ -73,7 +73,7 @@ public class ImportFilterConfig {
             return new VariantsProcessor();
         }
 
-        return new VariantsReader().readConfig(new File(variantConfigFile)).getProcessor();
+        return VariantsReader.createFromFile(new File(variantConfigFile)).getProcessor(getLanguages());
     }
 
     public DatabaseProperties getDatabaseProperties() {
