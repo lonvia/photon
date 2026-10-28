@@ -2,6 +2,7 @@ package de.komoot.photon.variants.config;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import de.komoot.photon.normalization.Normalizer;
 import de.komoot.photon.variants.WordTransformer;
 import org.jspecify.annotations.NullMarked;
 
@@ -16,5 +17,5 @@ import java.util.List;
 public interface ProcessorConfig {
     record TransformerConfig (WordTransformer transformer, FilterConfig filters) {}
 
-    List<TransformerConfig> getTransformers();
+    List<TransformerConfig> getTransformers(Normalizer normalizer);
 }

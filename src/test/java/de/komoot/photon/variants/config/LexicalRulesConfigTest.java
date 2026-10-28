@@ -1,6 +1,11 @@
 package de.komoot.photon.variants.config;
 
 import de.komoot.photon.UsageException;
+import de.komoot.photon.normalization.ICUNormalizer;
+import de.komoot.photon.normalization.NullNormalizer;
+import org.assertj.core.api.AbstractListAssert;
+import org.assertj.core.api.ObjectAssert;
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -21,21 +26,29 @@ class LexicalRulesConfigTest {
         return YAMLMapper.shared().readValue(content.toString(), LexicalRulesConfig.class);
     }
 
+    private static AbstractListAssert<?, List<? extends Tuple>, Tuple, ObjectAssert<Tuple>> assertThatReplacementTree(LexicalRulesConfig cfg) {
+        return assertThat(cfg.getReplacementTree(NullNormalizer.shared()))
+                .extracting(Map.Entry::getKey,
+                        e -> new HashSet<>(e.getValue()));
+    }
+
+    private static AbstractListAssert<?, List<? extends Tuple>, Tuple, ObjectAssert<Tuple>> assertThatReplacementTree(LexicalRulesConfig cfg, List<String> normalizerRules) {
+        return assertThat(cfg.getReplacementTree(new ICUNormalizer("test", normalizerRules)))
+                .extracting(Map.Entry::getKey,
+                        e -> new HashSet<>(e.getValue()));
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"foo > bar", "foo -> bar -> bar", "~foo~ -> bar", "fo~ o -> bar"})
     void testIllegalRules(String rule) {
         var cfg = configFromRules(rule);
         assertThatExceptionOfType(UsageException.class)
-                .isThrownBy(cfg::getReplacementTree);
+                .isThrownBy(() -> cfg.getReplacementTree(NullNormalizer.shared()));
     }
 
     @Test
     void testAddFull() {
-        var cfg = configFromRules("foo -> bar", "Community Hall -> CH");
-
-        assertThat(cfg.getReplacementTree())
-                .extracting(Map.Entry::getKey,
-                        e -> new HashSet<>(e.getValue()))
+        assertThatReplacementTree(configFromRules("foo -> bar", "Community Hall -> CH"))
                 .containsExactlyInAnyOrder(
                         tuple(" foo ", Set.of(" bar", " foo")),
                         tuple(" Community Hall ", Set.of(" Community Hall", " CH"))
@@ -44,11 +57,7 @@ class LexicalRulesConfigTest {
 
     @Test
     void testReplaceFull() {
-        var cfg = configFromRules("foo => bar");
-
-        assertThat(cfg.getReplacementTree())
-                .extracting(Map.Entry::getKey,
-                        e -> new HashSet<>(e.getValue()))
+        assertThatReplacementTree(configFromRules("foo => bar"))
                 .containsExactlyInAnyOrder(
                         tuple(" foo ", Set.of(" bar"))
                 );
@@ -56,11 +65,7 @@ class LexicalRulesConfigTest {
 
     @Test
     void testAddSuffixNoDecompose() {
-        var cfg = configFromRules("~berg |-> bg");
-
-        assertThat(cfg.getReplacementTree())
-                .extracting(Map.Entry::getKey,
-                        e -> new HashSet<>(e.getValue()))
+        assertThatReplacementTree(configFromRules("~berg |-> bg"))
                 .containsExactlyInAnyOrder(
                         tuple(" berg ", Set.of(" berg", " bg")),
                         tuple("berg ", Set.of("berg", "bg"))
@@ -69,11 +74,7 @@ class LexicalRulesConfigTest {
 
     @Test
     void testReplaceSuffixNoDecompose() {
-        var cfg = configFromRules("~berg |=> bg");
-
-        assertThat(cfg.getReplacementTree())
-                .extracting(Map.Entry::getKey,
-                        e -> new HashSet<>(e.getValue()))
+        assertThatReplacementTree(configFromRules("~berg |=> bg"))
                 .containsExactlyInAnyOrder(
                         tuple(" berg ", Set.of(" bg")),
                         tuple("berg ", Set.of("bg"))
@@ -82,11 +83,7 @@ class LexicalRulesConfigTest {
 
     @Test
     void testAddSuffixDecompose() {
-        var cfg = configFromRules("~berg -> bg");
-
-        assertThat(cfg.getReplacementTree())
-                .extracting(Map.Entry::getKey,
-                        e -> new HashSet<>(e.getValue()))
+        assertThatReplacementTree(configFromRules("~berg -> bg"))
                 .containsExactlyInAnyOrder(
                         tuple(" berg ", Set.of(" berg", " bg", "berg", "bg")),
                         tuple("berg ", Set.of(" berg", " bg", "berg", "bg"))
@@ -95,11 +92,7 @@ class LexicalRulesConfigTest {
 
     @Test
     void testReplaceSuffixDecompose() {
-        var cfg = configFromRules("~berg => bg");
-
-        assertThat(cfg.getReplacementTree())
-                .extracting(Map.Entry::getKey,
-                        e -> new HashSet<>(e.getValue()))
+        assertThatReplacementTree(configFromRules("~berg => bg"))
                 .containsExactlyInAnyOrder(
                         tuple(" berg ", Set.of("bg", " bg")),
                         tuple("berg ", Set.of("bg", " bg"))
@@ -108,11 +101,7 @@ class LexicalRulesConfigTest {
 
     @Test
     void testAddPrefixNoDecompose() {
-        var cfg = configFromRules("hinter~ |-> hnt");
-
-        assertThat(cfg.getReplacementTree())
-                .extracting(Map.Entry::getKey,
-                        e -> new HashSet<>(e.getValue()))
+        assertThatReplacementTree(configFromRules("hinter~ |-> hnt"))
                 .containsExactlyInAnyOrder(
                         tuple(" hinter", Set.of(" hinter", " hnt")),
                         tuple(" hinter ", Set.of(" hinter", " hnt"))
@@ -121,11 +110,7 @@ class LexicalRulesConfigTest {
 
     @Test
     void testReplacePrefixNoDecompose() {
-        var cfg = configFromRules("hinter~ |=> hnt");
-
-        assertThat(cfg.getReplacementTree())
-                .extracting(Map.Entry::getKey,
-                        e -> new HashSet<>(e.getValue()))
+        assertThatReplacementTree(configFromRules("hinter~ |=> hnt"))
                 .containsExactlyInAnyOrder(
                         tuple(" hinter", Set.of(" hnt")),
                         tuple(" hinter ", Set.of(" hnt"))
@@ -134,11 +119,7 @@ class LexicalRulesConfigTest {
 
     @Test
     void testAddPrefixDecompose() {
-        var cfg = configFromRules("hinter~ -> hnt");
-
-        assertThat(cfg.getReplacementTree())
-                .extracting(Map.Entry::getKey,
-                        e -> new HashSet<>(e.getValue()))
+        assertThatReplacementTree(configFromRules("hinter~ -> hnt"))
                 .containsExactlyInAnyOrder(
                         tuple(" hinter", Set.of(" hinter", " hinter ", " hnt", " hnt ")),
                         tuple(" hinter ", Set.of(" hinter", " hnt"))
@@ -147,11 +128,7 @@ class LexicalRulesConfigTest {
 
     @Test
     void testReplacePrefixDecompose() {
-        var cfg = configFromRules("hinter~ => hnt");
-
-        assertThat(cfg.getReplacementTree())
-                .extracting(Map.Entry::getKey,
-                        e -> new HashSet<>(e.getValue()))
+        assertThatReplacementTree(configFromRules("hinter~ => hnt"))
                 .containsExactlyInAnyOrder(
                         tuple(" hinter", Set.of(" hnt", " hnt ")),
                         tuple(" hinter ", Set.of(" hnt"))
@@ -160,11 +137,7 @@ class LexicalRulesConfigTest {
 
     @Test
     void testAddBeginningOnly() {
-        var cfg = configFromRules("^Premier -> Pr");
-
-        assertThat(cfg.getReplacementTree())
-                .extracting(Map.Entry::getKey,
-                        e -> new HashSet<>(e.getValue()))
+        assertThatReplacementTree(configFromRules("^Premier -> Pr"))
                 .containsExactlyInAnyOrder(
                         tuple("^ Premier ", Set.of("^ Pr", "^ Premier"))
                 );
@@ -172,11 +145,7 @@ class LexicalRulesConfigTest {
 
     @Test
     void testReplaceBeginningOnly() {
-        var cfg = configFromRules("^Premier => Pr");
-
-        assertThat(cfg.getReplacementTree())
-                .extracting(Map.Entry::getKey,
-                        e -> new HashSet<>(e.getValue()))
+        assertThatReplacementTree(configFromRules("^Premier => Pr"))
                 .containsExactlyInAnyOrder(
                         tuple("^ Premier ", Set.of("^ Pr"))
                 );
@@ -184,11 +153,7 @@ class LexicalRulesConfigTest {
 
     @Test
     void testAddFinalOnly() {
-        var cfg = configFromRules("road$ -> rd");
-
-        assertThat(cfg.getReplacementTree())
-                .extracting(Map.Entry::getKey,
-                        e -> new HashSet<>(e.getValue()))
+        assertThatReplacementTree(configFromRules("road$ -> rd"))
                 .containsExactlyInAnyOrder(
                         tuple(" road ^", Set.of(" rd ^", " road ^"))
                 );
@@ -196,11 +161,7 @@ class LexicalRulesConfigTest {
 
     @Test
     void testReplaceFinalOnly() {
-        var cfg = configFromRules("road$ => rd");
-
-        assertThat(cfg.getReplacementTree())
-                .extracting(Map.Entry::getKey,
-                        e -> new HashSet<>(e.getValue()))
+        assertThatReplacementTree(configFromRules("road$ => rd"))
                 .containsExactlyInAnyOrder(
                         tuple(" road ^", Set.of(" rd ^"))
                 );
@@ -208,11 +169,7 @@ class LexicalRulesConfigTest {
 
     @Test
     void testDecomposeOnly() {
-        var cfg = configFromRules("~foo -> foo");
-
-        assertThat(cfg.getReplacementTree())
-                .extracting(Map.Entry::getKey,
-                        e -> new HashSet<>(e.getValue()))
+        assertThatReplacementTree(configFromRules("~foo -> foo"))
                 .containsExactlyInAnyOrder(
                         tuple(" foo ", Set.of(" foo", "foo")),
                         tuple("foo ", Set.of(" foo", "foo"))
@@ -221,11 +178,7 @@ class LexicalRulesConfigTest {
 
     @Test
     void testAddSuffixDecomposeEndOnly() {
-        var cfg = configFromRules("~berg |-> bg", "~berg$ -> bg");
-
-        assertThat(cfg.getReplacementTree())
-                .extracting(Map.Entry::getKey,
-                        e -> new HashSet<>(e.getValue()))
+        assertThatReplacementTree(configFromRules("~berg |-> bg", "~berg$ -> bg"))
                 .containsExactlyInAnyOrder(
                         tuple(" berg ", Set.of(" berg", " bg")),
                         tuple(" berg ^", Set.of(" berg ^", " bg ^", "berg ^", "bg ^")),
@@ -236,11 +189,7 @@ class LexicalRulesConfigTest {
 
     @Test
     void testReplaceSuffixDecomposeEndOnly() {
-        var cfg = configFromRules("~berg |=> bg", "~berg$ => bg");
-
-        assertThat(cfg.getReplacementTree())
-                .extracting(Map.Entry::getKey,
-                        e -> new HashSet<>(e.getValue()))
+        assertThatReplacementTree(configFromRules("~berg |=> bg", "~berg$ => bg"))
                 .containsExactlyInAnyOrder(
                         tuple(" berg ", Set.of(" bg")),
                         tuple(" berg ^", Set.of(" bg ^", "bg ^")),
@@ -251,11 +200,7 @@ class LexicalRulesConfigTest {
 
     @Test
     void testAddMultipleSuffix() {
-        var cfg = configFromRules("~berg,~burg -> bg");
-
-        assertThat(cfg.getReplacementTree())
-                .extracting(Map.Entry::getKey,
-                        e -> new HashSet<>(e.getValue()))
+        assertThatReplacementTree(configFromRules("~berg,~burg -> bg"))
                 .containsExactlyInAnyOrder(
                         tuple(" berg ", Set.of(" berg", "berg", " bg", "bg")),
                         tuple("berg ", Set.of(" berg", "berg", " bg", "bg")),
@@ -263,4 +208,19 @@ class LexicalRulesConfigTest {
                         tuple("burg ", Set.of(" burg", "burg", " bg", "bg"))
                 );
     }
-}
+
+    @Test
+    void testVariantWithNormalization() {
+        assertThatReplacementTree(configFromRules("Road -> Rd"), List.of(":: lower"))
+                .containsExactlyInAnyOrder(
+                        tuple(" road ", Set.of(" road", " rd"))
+                );
+    }
+
+    @Test
+    void testVariantWithNormalizationPreserveTrailingChars() {
+        assertThatReplacementTree(configFromRules("Road -> Rd-"), List.of(" '-' > ' '"))
+                .containsExactlyInAnyOrder(
+                        tuple(" Road ", Set.of(" Road", " Rd "))
+                );
+    }}

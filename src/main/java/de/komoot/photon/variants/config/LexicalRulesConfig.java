@@ -2,6 +2,7 @@ package de.komoot.photon.variants.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.komoot.photon.UsageException;
+import de.komoot.photon.normalization.Normalizer;
 import de.komoot.photon.variants.utils.SimpleTrie;
 import org.jspecify.annotations.NullMarked;
 
@@ -19,6 +20,12 @@ public class LexicalRulesConfig extends FilterConfig {
         private static final Pattern SOURCETERM_SPLIT = Pattern.compile("^\\s*([~^]?)([^~$^]*?)([~$]?)\\s*$");
 
         private record SourceTerm(String term, char preflag, char postflag) {}
+
+        private final Normalizer normalizer;
+
+        public SimpleReplacementSet(Normalizer normalizer) {
+            this.normalizer = normalizer;
+        }
 
         void addRule(String rule) {
             var parts = RULE_SPLIT.splitWithDelimiters(rule, -1);
@@ -72,8 +79,8 @@ public class LexicalRulesConfig extends FilterConfig {
                     if (pre == '~' && post == '~') {
                         throw new UsageException("Invalid variant descriptor: " + term);
                     }
-                    String finalTerm = match.group(2);
-                    if (!finalTerm.isEmpty()) {
+                    String finalTerm = normalizer.transform(match.group(2));
+                    if (!finalTerm.isBlank()) {
                         variants.add(new SourceTerm(finalTerm, pre, post));
                     }
                 } else {
@@ -86,8 +93,8 @@ public class LexicalRulesConfig extends FilterConfig {
 
         private List<String> parseReplacementWords(String word) {
             return WORDLIST_SPLIT.splitAsStream(word)
-                    .map(String::strip)
-                    .filter(s -> !s.isEmpty())
+                    .map(w -> normalizer.transform(word.strip()))
+                    .filter(s -> !s.isBlank())
                     .toList();
         }
 
@@ -127,8 +134,8 @@ public class LexicalRulesConfig extends FilterConfig {
     @JsonProperty("words")
     private List<String> replacements = List.of();
 
-    public SimpleTrie<List<String>> getReplacementTree() {
-        var vset = new SimpleReplacementSet();
+    public SimpleTrie<List<String>> getReplacementTree(Normalizer normalizer) {
+        var vset = new SimpleReplacementSet(normalizer);
 
         for (var rule: replacements) {
             vset.addRule(rule);

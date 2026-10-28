@@ -1,5 +1,6 @@
 package de.komoot.photon.variants.lexcial;
 
+import de.komoot.photon.normalization.NullNormalizer;
 import de.komoot.photon.variants.config.LexicalRulesConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -19,7 +20,7 @@ class LexicalTransformerTest {
         }
 
         var config = YAMLMapper.shared().readValue(content.toString(), LexicalRulesConfig.class);
-        return new LexicalTransformer(config.getReplacementTree());
+        return new LexicalTransformer(config.getReplacementTree(NullNormalizer.shared()));
     }
 
     @Test

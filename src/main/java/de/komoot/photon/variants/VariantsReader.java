@@ -1,12 +1,9 @@
 package de.komoot.photon.variants;
 
-import de.komoot.photon.variants.config.LexicalProcessorConfig;
-import de.komoot.photon.variants.config.RuleListDeserializer;
-import de.komoot.photon.variants.config.VariantConfig;
+import de.komoot.photon.variants.config.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jspecify.annotations.NullMarked;
-import tools.jackson.databind.module.SimpleModule;
 import tools.jackson.dataformat.yaml.YAMLMapper;
 
 import java.io.File;
@@ -26,11 +23,8 @@ public class VariantsReader {
     }
 
     public static VariantsReader createFromFile(File variantsConfigFile) {
-        var ruleListDeserializer = new RuleListDeserializer(variantsConfigFile.getParentFile().toPath());
-
         YAMLMapper mapper = YAMLMapper.builder()
-                .addModule(new SimpleModule()
-                        .addDeserializer(LexicalProcessorConfig.RuleList.class, ruleListDeserializer))
+                .addModule(new NestedConfigModule(variantsConfigFile.getParentFile().toPath()))
                 .build();
 
         var config = mapper.readValue(variantsConfigFile, VariantConfig.class);

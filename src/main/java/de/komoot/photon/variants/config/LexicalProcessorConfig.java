@@ -1,6 +1,7 @@
 package de.komoot.photon.variants.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import de.komoot.photon.normalization.Normalizer;
 import de.komoot.photon.variants.lexcial.LexicalTransformer;
 import org.jspecify.annotations.NullMarked;
 
@@ -10,10 +11,8 @@ import java.util.List;
 @NullMarked
 public class LexicalProcessorConfig implements ProcessorConfig {
 
-    public static class RuleList extends ArrayList<LexicalRulesConfig> {}
-
     @JsonProperty
-    private final RuleList rules = new RuleList();
+    private final List<LexicalRulesConfig> rules = List.of();
 
     @Override
     public String toString() {
@@ -28,10 +27,10 @@ public class LexicalProcessorConfig implements ProcessorConfig {
     }
 
     @Override
-    public List<TransformerConfig> getTransformers() {
+    public List<TransformerConfig> getTransformers(Normalizer normalizer) {
         List<TransformerConfig> list = new ArrayList<>();
         for (LexicalRulesConfig rule : rules) {
-            var t = rule.getReplacementTree();
+            var t = rule.getReplacementTree(normalizer);
             if (!t.isEmpty()) {
                 var transformerConfig = new TransformerConfig(new LexicalTransformer(t), rule);
                 list.add(transformerConfig);

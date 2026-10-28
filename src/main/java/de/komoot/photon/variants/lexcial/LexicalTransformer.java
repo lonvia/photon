@@ -2,8 +2,6 @@ package de.komoot.photon.variants.lexcial;
 
 import de.komoot.photon.variants.WordTransformer;
 import de.komoot.photon.variants.utils.SimpleTrie;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.ArrayList;
@@ -13,8 +11,6 @@ import java.util.Set;
 
 @NullMarked
 public class LexicalTransformer implements WordTransformer {
-    private static final Logger LOGGER = LogManager.getLogger();
-
     private final SimpleTrie<List<String>> replacements;
 
     public LexicalTransformer(SimpleTrie<List<String>> replacements) {

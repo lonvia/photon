@@ -2,6 +2,9 @@ package de.komoot.photon.variants.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.komoot.photon.PhotonDoc;
+import de.komoot.photon.normalization.ICUNormalizer;
+import de.komoot.photon.normalization.Normalizer;
+import de.komoot.photon.normalization.NullNormalizer;
 import de.komoot.photon.variants.VariantsProcessor;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -14,9 +17,28 @@ import java.util.function.Function;
 
 @NullMarked
 public class VariantConfig {
+    private static class Normalizations {
+        Normalizer input = NullNormalizer.shared();
+        Normalizer search = NullNormalizer.shared();
+
+        @JsonProperty("input")
+        void createInputNormalizer(List<String> rules) {
+            input = new ICUNormalizer("PhotonInputNormalizer", rules);
+        }
+
+        @JsonProperty("search")
+        void createSearchNormalizer(List<String> rules) {
+            search = new ICUNormalizer("PhotonSearchNormalizer", rules);
+        }
+    }
 
     @JsonProperty("variants")
     private List<ProcessorConfig> processors = List.of();
+
+    @JsonProperty("normalization")
+    private Normalizations normalizers = new Normalizations();
+
+    @JsonProperty
 
     @Override
     public String toString() {
@@ -35,7 +57,7 @@ public class VariantConfig {
         var transformers = new ArrayList<ProcessorConfig.TransformerConfig>();
         var filterCollector = new FilterCollector();
         for (var proc : processors) {
-            for (var trans : proc.getTransformers()) {
+            for (var trans : proc.getTransformers(normalizers.input)) {
                 if (trans.filters().lang == null || languages.contains(trans.filters().lang)) {
                     filterCollector.update(trans.filters());
                     transformers.add(trans);
@@ -52,6 +74,10 @@ public class VariantConfig {
         }
 
         return proc;
+    }
+
+    public Normalizer getInputNormalizer() {
+        return normalizers.input;
     }
 
     private record PhotonDocCategoryFilter(String category) implements Function<PhotonDoc, @Nullable String> {

@@ -1,14 +1,10 @@
 package de.komoot.photon.variants;
 
 import de.komoot.photon.PhotonDoc;
-import de.komoot.photon.variants.config.LexicalProcessorConfig;
-import de.komoot.photon.variants.config.RuleListDeserializer;
 import de.komoot.photon.variants.config.VariantConfig;
 import org.junit.jupiter.api.Test;
-import tools.jackson.databind.module.SimpleModule;
 import tools.jackson.dataformat.yaml.YAMLMapper;
 
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -17,14 +13,7 @@ import static org.assertj.core.api.Assertions.*;
 class VariantsProcessorTest {
 
     private VariantsProcessor make(String rules, String... langs) {
-        var ruleListDeserializer = new RuleListDeserializer(Path.of(""));
-
-        YAMLMapper mapper = YAMLMapper.builder()
-                .addModule(new SimpleModule()
-                        .addDeserializer(LexicalProcessorConfig.RuleList.class, ruleListDeserializer))
-                .build();
-
-        var config = mapper.readValue(rules.stripIndent(), VariantConfig.class);
+        var config = YAMLMapper.shared().readValue(rules.stripIndent(), VariantConfig.class);
 
         return config.createProcessor(Arrays.stream(langs).collect(Collectors.toSet()));
     }

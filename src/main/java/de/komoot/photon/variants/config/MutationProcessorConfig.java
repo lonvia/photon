@@ -1,10 +1,12 @@
 package de.komoot.photon.variants.config;
 
+import de.komoot.photon.normalization.Normalizer;
+
 import java.util.List;
 
 public class MutationProcessorConfig implements ProcessorConfig {
     @Override
-    public List<TransformerConfig> getTransformers() {
+    public List<TransformerConfig> getTransformers(Normalizer normalizer) {
         return List.of();
     }
 }
