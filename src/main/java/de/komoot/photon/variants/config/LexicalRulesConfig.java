@@ -93,7 +93,7 @@ public class LexicalRulesConfig extends FilterConfig {
 
         private List<String> parseReplacementWords(String word) {
             return WORDLIST_SPLIT.splitAsStream(word)
-                    .map(w -> normalizer.transform(word.strip()))
+                    .map(w -> normalizer.transform(w.strip()))
                     .filter(s -> !s.isBlank())
                     .toList();
         }

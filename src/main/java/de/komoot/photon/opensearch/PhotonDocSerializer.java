@@ -5,6 +5,8 @@ import de.komoot.photon.DatabaseProperties;
 import de.komoot.photon.PhotonDoc;
 import de.komoot.photon.nominatim.model.AddressType;
 import de.komoot.photon.nominatim.model.PostcodeUtils;
+import de.komoot.photon.variants.VariantsProcessor;
+import de.komoot.photon.variants.config.VariantConfig;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.locationtech.jts.geom.Envelope;
@@ -21,20 +23,24 @@ import java.util.Set;
 public class PhotonDocSerializer extends StdSerializer<PhotonDoc> {
     private Set<String> primaryLanguages = Set.of("default");
     private ConfigExtraTags configExtraTags = new ConfigExtraTags();
+    @Nullable private VariantsProcessor variantsProcessor;
 
     public PhotonDocSerializer() {
         super(PhotonDoc.class);
     }
 
-    public void configureFromDBProperties(DatabaseProperties props) {
+    public void configure(DatabaseProperties props, VariantConfig variantConfig) {
         primaryLanguages = new HashSet<>(props.getLanguages());
         primaryLanguages.add("default");
 
         configExtraTags = props.configExtraTags();
+
+        variantsProcessor = variantConfig.createProcessor(props.getLanguages(), props.getInputNormalizerRules());
     }
 
     @Override
     public void serialize(PhotonDoc value, JsonGenerator gen, SerializationContext context) {
+        assert variantsProcessor != null;
         final var atype = value.getAddressType();
         final var isNamed = !value.getName().isEmpty();
         final var isAddress = value.getHouseNumber() != null;
@@ -64,8 +70,9 @@ public class PhotonDocSerializer extends StdSerializer<PhotonDoc> {
         }
 
         if (isAddress) {
-            gen.writeStringProperty(DocFields.HOUSENUMBER, value.getHouseNumber());
-            termCollector.add(value.getHouseNumber(), isNamed ? 4 : 5);
+            var normHnr = variantsProcessor.normalize(value.getHouseNumber());
+            gen.writeStringProperty(DocFields.HOUSENUMBER, normHnr);
+            termCollector.add(normHnr, isNamed ? 4 : 5);
         }
 
         if (value.getPostcode() != null) {
@@ -82,6 +89,7 @@ public class PhotonDocSerializer extends StdSerializer<PhotonDoc> {
             context.writeValue(gen, value.getName());
 
             for (var entry : value.getName().entrySet()) {
+                // TODO: VARIANTS!!!!
                 final var name = entry.getValue();
                 final boolean isPrimaryName = primaryLanguages.contains(entry.getKey());
                 termCollector.add(name, isPrimaryName ? 5 : 2);

@@ -3,8 +3,7 @@ package de.komoot.photon.config;
 import com.beust.jcommander.Parameter;
 import de.komoot.photon.ConfigExtraTags;
 import de.komoot.photon.DatabaseProperties;
-import de.komoot.photon.variants.VariantsProcessor;
-import de.komoot.photon.variants.VariantsReader;
+import de.komoot.photon.variants.config.VariantConfig;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -50,6 +49,8 @@ public class ImportFilterConfig {
             """)
     @Nullable private String variantConfigFile;
 
+    @Nullable private VariantConfig variantConfig;
+
     public Set<String> getLanguages() {
         return new HashSet<>(languages);
     }
@@ -68,12 +69,16 @@ public class ImportFilterConfig {
         return importGeometryColumn;
     }
 
-    public VariantsProcessor getVariantConfig() {
-        if (variantConfigFile == null) {
-            return new VariantsProcessor();
+    public VariantConfig getVariantConfig() {
+        if (variantConfig == null) {
+            if (variantConfigFile == null) {
+                variantConfig = new VariantConfig();
+            } else {
+                variantConfig = VariantConfig.createFromFile(new File(variantConfigFile));
+            }
         }
 
-        return VariantsReader.createFromFile(new File(variantConfigFile)).getProcessor(getLanguages());
+        return variantConfig;
     }
 
     public DatabaseProperties getDatabaseProperties() {
@@ -83,6 +88,7 @@ public class ImportFilterConfig {
         }
         dbProps.setSupportGeometries(importGeometryColumn);
         dbProps.setReverseOnly(reverseOnly);
+        dbProps.setInputNormalizerRules(getVariantConfig().getInputNormalizerRules());
 
         if (extraTags != null) {
             dbProps.setExtraTags(extraTags);

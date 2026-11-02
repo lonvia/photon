@@ -9,6 +9,7 @@ import de.komoot.photon.metrics.MetricsConfig;
 import de.komoot.photon.nominatim.ImportThread;
 import de.komoot.photon.nominatim.NominatimImporter;
 import de.komoot.photon.nominatim.NominatimUpdater;
+import de.komoot.photon.normalization.Normalizer;
 import de.komoot.photon.opensearch.PhotonIndex;
 import de.komoot.photon.query.*;
 import de.komoot.photon.searcher.GeoJsonFormatter;
@@ -48,9 +49,6 @@ public class App {
         if (command == null) {
             System.exit(1);
         }
-
-        cli.getImportFilterConfig().getVariantConfig();
-        System.exit(2);
 
         try {
             if (runPhoton(command, cli)) {
@@ -162,8 +160,12 @@ public class App {
         }
 
 
-        final int maxConcurrentBulks = Math.max(1, cli.getGeneralConfig().getThreads());
-        final var importThread = new ImportThread(esServer.createImporter(dbProperties, maxConcurrentBulks, true));
+        final var importer = esServer.createImporter(
+                dbProperties,
+                cli.getImportFilterConfig().getVariantConfig(),
+                Math.max(1, cli.getGeneralConfig().getThreads()),
+                true);
+        final var importThread = new ImportThread(importer);
 
         Date importDate;
         try {
@@ -356,7 +358,7 @@ public class App {
         }
 
         NominatimUpdater nominatimUpdater = new NominatimUpdater(postgresqlConfig, dbProperties);
-        nominatimUpdater.setUpdater(server.createUpdater(dbProperties));
+        nominatimUpdater.setUpdater(server.createUpdater(dbProperties, importFilterConfig.getVariantConfig()));
         return nominatimUpdater;
     }
 
@@ -454,12 +456,14 @@ public class App {
             config.routes.get("/status", new StatusRequestHandler(server));
 
             if (!dbProperties.getReverseOnly()) {
+                var normalizer = Normalizer.fromICURules("PhotonInputNormalizer", dbProperties.getInputNormalizerRules());
                 config.routes.get("/api", new GenericSearchHandler<>(
                         new SimpleSearchRequestFactory(
                                 dbProperties.getLanguages(),
                                 args.getDefaultLanguage(),
                                 args.getMaxResults(),
-                                dbProperties.getSupportGeometries()),
+                                dbProperties.getSupportGeometries(),
+                                normalizer),
                         server.createSearchHandler(args.getQueryTimeout(), synonyms),
                         formatter));
 
@@ -468,7 +472,8 @@ public class App {
                                 dbProperties.getLanguages(),
                                 args.getDefaultLanguage(),
                                 args.getMaxResults(),
-                                dbProperties.getSupportGeometries()),
+                                dbProperties.getSupportGeometries(),
+                                normalizer),
                         server.createStructuredSearchHandler(args.getQueryTimeout()),
                         formatter));
             }

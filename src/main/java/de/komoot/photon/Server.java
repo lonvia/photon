@@ -6,6 +6,7 @@ import de.komoot.photon.query.ReverseRequest;
 import de.komoot.photon.query.SimpleSearchRequest;
 import de.komoot.photon.query.StructuredSearchRequest;
 import de.komoot.photon.searcher.SearchHandler;
+import de.komoot.photon.variants.config.VariantConfig;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -214,13 +215,13 @@ public class Server {
         return meta.get(PhotonIndex.META_DB_PROPERTIES).to(DatabaseProperties.class, new JacksonJsonpMapper(mapper));
     }
 
-    public Importer createImporter(DatabaseProperties dbProperties, int maxConcurrentRequests, boolean tuneRefresh) {
-        photonDocSerializer.configureFromDBProperties(dbProperties);
+    public Importer createImporter(DatabaseProperties dbProperties, VariantConfig variantConfig, int maxConcurrentRequests, boolean tuneRefresh) {
+        photonDocSerializer.configure(dbProperties, variantConfig);
         return new de.komoot.photon.opensearch.Importer(client, maxConcurrentRequests, tuneRefresh);
     }
 
-    public Updater createUpdater(DatabaseProperties dbProperties) {
-        photonDocSerializer.configureFromDBProperties(dbProperties);
+    public Updater createUpdater(DatabaseProperties dbProperties, VariantConfig variantConfig) {
+        photonDocSerializer.configure(dbProperties, variantConfig);
         return new de.komoot.photon.opensearch.Updater(client);
     }
 

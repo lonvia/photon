@@ -3,12 +3,13 @@ package de.komoot.photon.variants.config;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.komoot.photon.PhotonDoc;
 import de.komoot.photon.normalization.ICUNormalizer;
-import de.komoot.photon.normalization.Normalizer;
 import de.komoot.photon.normalization.NullNormalizer;
 import de.komoot.photon.variants.VariantsProcessor;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -18,18 +19,7 @@ import java.util.function.Function;
 @NullMarked
 public class VariantConfig {
     private static class Normalizations {
-        Normalizer input = NullNormalizer.shared();
-        Normalizer search = NullNormalizer.shared();
-
-        @JsonProperty("input")
-        void createInputNormalizer(List<String> rules) {
-            input = new ICUNormalizer("PhotonInputNormalizer", rules);
-        }
-
-        @JsonProperty("search")
-        void createSearchNormalizer(List<String> rules) {
-            search = new ICUNormalizer("PhotonSearchNormalizer", rules);
-        }
+        @Nullable List<String> input;
     }
 
     @JsonProperty("variants")
@@ -53,11 +43,12 @@ public class VariantConfig {
         return out.toString();
     }
 
-    public VariantsProcessor createProcessor(Set<String> languages) {
+    public VariantsProcessor createProcessor(Set<String> languages, List<String> normalizerRules) {
+        var normalizer = normalizerRules.isEmpty()? NullNormalizer.shared() : new ICUNormalizer("PhotonInputNormalizer", normalizerRules);
         var transformers = new ArrayList<ProcessorConfig.TransformerConfig>();
         var filterCollector = new FilterCollector();
         for (var proc : processors) {
-            for (var trans : proc.getTransformers(normalizers.input)) {
+            for (var trans : proc.getTransformers(normalizer)) {
                 if (trans.filters().lang == null || languages.contains(trans.filters().lang)) {
                     filterCollector.update(trans.filters());
                     transformers.add(trans);
@@ -66,6 +57,7 @@ public class VariantConfig {
         }
 
         var proc = new VariantsProcessor(languages,
+                normalizer,
                 filterCollector.createPhotonDocFilters(),
                 filterCollector.createNameFilters());
 
@@ -76,8 +68,8 @@ public class VariantConfig {
         return proc;
     }
 
-    public Normalizer getInputNormalizer() {
-        return normalizers.input;
+    public List<String> getInputNormalizerRules() {
+        return normalizers.input == null ? List.of() : normalizers.input;
     }
 
     private record PhotonDocCategoryFilter(String category) implements Function<PhotonDoc, @Nullable String> {
@@ -154,5 +146,13 @@ public class VariantConfig {
 
             return filters;
         }
+    }
+
+    public static VariantConfig createFromFile(File variantsConfigFile) {
+        YAMLMapper mapper = YAMLMapper.builder()
+                .addModule(new NestedConfigModule(variantsConfigFile.getParentFile().toPath()))
+                .build();
+
+        return mapper.readValue(variantsConfigFile, VariantConfig.class);
     }
 }

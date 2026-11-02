@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import tools.jackson.dataformat.yaml.YAMLMapper;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.*;
@@ -15,7 +16,7 @@ class VariantsProcessorTest {
     private VariantsProcessor make(String rules, String... langs) {
         var config = YAMLMapper.shared().readValue(rules.stripIndent(), VariantConfig.class);
 
-        return config.createProcessor(Arrays.stream(langs).collect(Collectors.toSet()));
+        return config.createProcessor(Arrays.stream(langs).collect(Collectors.toSet()), List.of());
     }
 
     @Test

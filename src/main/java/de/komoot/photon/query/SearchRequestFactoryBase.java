@@ -1,5 +1,6 @@
 package de.komoot.photon.query;
 
+import de.komoot.photon.normalization.Normalizer;
 import io.javalin.http.Context;
 import org.jspecify.annotations.NullMarked;
 import org.locationtech.jts.geom.Envelope;
@@ -15,8 +16,11 @@ public class SearchRequestFactoryBase extends RequestFactoryBase {
                             Stream.of("lat", "lon", "location_bias_scale", "zoom", "bbox", "suggest_addresses"))
                     .collect(Collectors.toSet());
 
-    protected SearchRequestFactoryBase(Set<String> supportedLanguages, String defaultLanguage, int maxResults, boolean supportGeometries) {
+    protected final Normalizer normalizer;
+
+    protected SearchRequestFactoryBase(Set<String> supportedLanguages, String defaultLanguage, int maxResults, boolean supportGeometries, Normalizer normalizer) {
         super(supportedLanguages, defaultLanguage, maxResults, supportGeometries);
+        this.normalizer = normalizer;
     }
 
     protected void completeSearchRequest(SearchRequestBase request, Context context) {

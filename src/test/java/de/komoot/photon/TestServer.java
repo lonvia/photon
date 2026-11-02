@@ -5,6 +5,7 @@ import de.komoot.photon.config.PhotonDBLayoutConfig;
 import de.komoot.photon.opensearch.OpenSearchResult;
 import de.komoot.photon.opensearch.PhotonIndex;
 import de.komoot.photon.searcher.PhotonResult;
+import de.komoot.photon.variants.config.VariantConfig;
 import org.codelibs.opensearch.runner.OpenSearchRunner;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.indices.analyze.AnalyzeToken;
@@ -61,11 +62,11 @@ public class TestServer {
     public Importer createImporter(DatabaseProperties dbProperties) {
         // Don't tune refresh_interval,
         // or the explicit refresh() calls would no-op against refresh_interval=-1.
-        return testServer.createImporter(dbProperties, 1, false);
+        return testServer.createImporter(dbProperties, new VariantConfig(), 1, false);
     }
 
     public Updater createUpdater(DatabaseProperties dbProperties) {
-        return testServer.createUpdater(dbProperties);
+        return testServer.createUpdater(dbProperties, new VariantConfig());
     }
 
     public void stopTestServer() {
