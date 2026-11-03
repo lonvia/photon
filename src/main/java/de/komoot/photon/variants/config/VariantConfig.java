@@ -18,7 +18,9 @@ import java.util.function.Function;
 
 @NullMarked
 public class VariantConfig {
+
     private static class Normalizations {
+        @JsonProperty
         @Nullable List<String> input;
     }
 
@@ -132,7 +134,7 @@ public class VariantConfig {
         List<@Nullable String> getTransformerFilter(FilterConfig config) {
             var filters = new ArrayList<@Nullable String>();
             if (hasCountry) {
-                filters.add(config.country);
+                filters.add(config.country == null ? null : config.country.toUpperCase());
             }
             for (var c : categories) {
                 filters.add(config.categories.contains(c) ? "1" : "0");
@@ -150,7 +152,7 @@ public class VariantConfig {
 
     public static VariantConfig createFromFile(File variantsConfigFile) {
         YAMLMapper mapper = YAMLMapper.builder()
-                .addModule(new NestedConfigModule(variantsConfigFile.getParentFile().toPath()))
+                .addModule(new NestedConfigModule(variantsConfigFile.getAbsoluteFile().getParentFile().toPath()))
                 .build();
 
         return mapper.readValue(variantsConfigFile, VariantConfig.class);

@@ -59,14 +59,14 @@ public class TestServer {
 
     }
 
-    public Importer createImporter(DatabaseProperties dbProperties) {
+    public Importer createImporter(DatabaseProperties dbProperties, VariantConfig variantConfig) {
         // Don't tune refresh_interval,
         // or the explicit refresh() calls would no-op against refresh_interval=-1.
-        return testServer.createImporter(dbProperties, new VariantConfig(), 1, false);
+        return testServer.createImporter(dbProperties, variantConfig, 1, false);
     }
 
-    public Updater createUpdater(DatabaseProperties dbProperties) {
-        return testServer.createUpdater(dbProperties, new VariantConfig());
+    public Updater createUpdater(DatabaseProperties dbProperties, VariantConfig variantConfig) {
+        return testServer.createUpdater(dbProperties, variantConfig);
     }
 
     public void stopTestServer() {

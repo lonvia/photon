@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test;
 import tools.jackson.dataformat.yaml.YAMLMapper;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.*;
@@ -16,7 +15,7 @@ class VariantsProcessorTest {
     private VariantsProcessor make(String rules, String... langs) {
         var config = YAMLMapper.shared().readValue(rules.stripIndent(), VariantConfig.class);
 
-        return config.createProcessor(Arrays.stream(langs).collect(Collectors.toSet()), List.of());
+        return config.createProcessor(Arrays.stream(langs).collect(Collectors.toSet()), config.getInputNormalizerRules());
     }
 
     @Test
@@ -89,5 +88,24 @@ class VariantsProcessorTest {
                 .containsExactlyInAnyOrder("RED Avenue");
         assertThat(trans.transform("en", "Red Avenue"))
                 .containsExactlyInAnyOrder("RED Avenue", "RED Av", "RED Ave");
+    }
+
+    @Test
+    void testRulesWithNormalization() {
+        var proc = make("""
+                normalization:
+                  input:
+                    - ":: lower ()"
+                    - "[[:Punctuation:][:Symbol:]] > ' '"
+                variants:
+                  - type: lexical
+                    rules:
+                      - words:
+                          - ~strasse -> str
+                """);
+        var trans = proc.getTransformForDoc(new PhotonDoc());
+
+        assertThat(trans.transform("default", "Baum-Strasse"))
+                .containsExactlyInAnyOrder("baum strasse", "baum str", "baumstrasse", "baumstr");
     }
 }

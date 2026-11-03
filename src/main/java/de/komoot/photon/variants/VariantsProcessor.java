@@ -2,7 +2,6 @@ package de.komoot.photon.variants;
 
 import de.komoot.photon.PhotonDoc;
 import de.komoot.photon.normalization.Normalizer;
-import de.komoot.photon.normalization.NullNormalizer;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -12,6 +11,7 @@ import java.util.function.Function;
 @NullMarked
 public class VariantsProcessor {
     private static class TreeNode {
+
         @Nullable private static final String ANY = null;
         @Nullable Map<@Nullable String, TreeNode> children;
         @Nullable List<WordTransformer> data;

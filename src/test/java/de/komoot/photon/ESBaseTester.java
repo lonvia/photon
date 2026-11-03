@@ -4,10 +4,12 @@ import de.komoot.photon.nominatim.model.AddressRow;
 import de.komoot.photon.nominatim.model.AddressType;
 import de.komoot.photon.nominatim.model.NameMap;
 import de.komoot.photon.searcher.PhotonResult;
+import de.komoot.photon.variants.config.VariantConfig;
 import org.junit.jupiter.api.AfterEach;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -22,6 +24,7 @@ public class ESBaseTester {
 
     private TestServer server;
     private final DatabaseProperties dbProperties = new DatabaseProperties();
+    private VariantConfig variantConfig = new VariantConfig();
 
     protected NameMap makeDocNames(String... names) {
         Map<String, String> nameMap = new HashMap<>();
@@ -81,11 +84,11 @@ public class ESBaseTester {
     }
 
     protected Importer makeImporter() {
-        return server.createImporter(dbProperties);
+        return server.createImporter(dbProperties, variantConfig);
     }
 
     protected Updater makeUpdater() {
-        return server.createUpdater(dbProperties);
+        return server.createUpdater(dbProperties, variantConfig);
     }
 
     protected Server getServer() {
@@ -120,6 +123,11 @@ public class ESBaseTester {
 
     protected DatabaseProperties getProperties() {
         return dbProperties;
+    }
+
+    protected void setVariantConfig(String config) {
+        variantConfig = YAMLMapper.shared().readValue(config.stripIndent(), VariantConfig.class);
+        dbProperties.setInputNormalizerRules(variantConfig.getInputNormalizerRules());
     }
 
     protected void refresh() {
