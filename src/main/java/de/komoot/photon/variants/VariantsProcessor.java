@@ -102,10 +102,6 @@ public class VariantsProcessor {
         return new Transform(finalTree);
     }
 
-    public String normalize(String input) {
-        return normalizer.transform(input);
-    }
-
     public class Transform {
         @Nullable private final TreeNode tree;
 
@@ -122,7 +118,20 @@ public class VariantsProcessor {
         }
 
         public Set<String> transform(String nameType, String value) {
-            var variants = Set.of(normalizer.transform(value));
+            return transformInternal(nameType, Set.of(normalizer.transform(value)));
+        }
+
+        public Set<String> transform(String nameType, Collection<String> values) {
+            Set<String> startSet = new HashSet<>();
+            for (var s : values) {
+                startSet.add(normalizer.transform(s));
+            }
+
+            return transformInternal(nameType, startSet);
+        }
+
+        private Set<String> transformInternal(String nameType, Set<String> startSet) {
+            var variants = startSet;
 
             if (tree != null) {
                 var finalTree = tree;

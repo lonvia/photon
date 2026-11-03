@@ -2,9 +2,7 @@ package de.komoot.photon.opensearch;
 
 import org.jspecify.annotations.NullMarked;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -44,5 +42,9 @@ public class NameCollector {
                 .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
                 .map(e -> e.getKey() + "|" + e.getValue())
                 .collect(Collectors.joining(";"));
+    }
+
+    public Set<String> nameSet() {
+        return terms.keySet();
     }
 }

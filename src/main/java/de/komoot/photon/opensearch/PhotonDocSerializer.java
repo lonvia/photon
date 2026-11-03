@@ -15,8 +15,8 @@ import tools.jackson.core.JsonGenerator;
 import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.ser.std.StdSerializer;
 
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 @NullMarked
@@ -41,11 +41,13 @@ public class PhotonDocSerializer extends StdSerializer<PhotonDoc> {
     @Override
     public void serialize(PhotonDoc value, JsonGenerator gen, SerializationContext context) {
         assert variantsProcessor != null;
+        final var docProcessor = variantsProcessor.getTransformForDoc(value);
         final var atype = value.getAddressType();
         final var isNamed = !value.getName().isEmpty();
         final var isAddress = value.getHouseNumber() != null;
         final var termCollector = new NameCollector();
         final var nameCollector  = new NameCollector();
+        final var fieldCollectors = new HashMap<String, NameCollector>();
 
         gen.writeStartObject();
         gen.writeNumberProperty(DocFields.OSM_ID, value.getOsmId());
@@ -70,7 +72,7 @@ public class PhotonDocSerializer extends StdSerializer<PhotonDoc> {
         }
 
         if (isAddress) {
-            var normHnr = variantsProcessor.normalize(value.getHouseNumber());
+            var normHnr = docProcessor.normalize(value.getHouseNumber());
             gen.writeStringProperty(DocFields.HOUSENUMBER, normHnr);
             termCollector.add(normHnr, isNamed ? 4 : 5);
         }
@@ -89,11 +91,11 @@ public class PhotonDocSerializer extends StdSerializer<PhotonDoc> {
             context.writeValue(gen, value.getName());
 
             for (var entry : value.getName().entrySet()) {
-                // TODO: VARIANTS!!!!
-                final var name = entry.getValue();
-                final boolean isPrimaryName = primaryLanguages.contains(entry.getKey());
-                termCollector.add(name, isPrimaryName ? 5 : 2);
-                nameCollector.add(name, isPrimaryName ? 2 : 1);
+                final var key = entry.getKey();
+                final var names = docProcessor.transform(key, entry.getValue());
+                final boolean isPrimaryName = primaryLanguages.contains(key);
+                termCollector.addAll(names, isPrimaryName ? 5 : 2);
+                nameCollector.addAll(names, isPrimaryName ? 2 : 1);
             }
         }
 
@@ -105,7 +107,13 @@ public class PhotonDocSerializer extends StdSerializer<PhotonDoc> {
 
             gen.writeName(type.getName());
             context.writeValue(gen, values);
-            termCollector.addAll(values.values(), prio);
+            var fieldCollector = new NameCollector();
+            for (var val : values.entrySet()) {
+                var names = docProcessor.transform(val.getKey(), val.getValue());
+                termCollector.addAll(names, prio);
+                fieldCollector.addAll(names, prio);
+            }
+            fieldCollectors.put(type.getName(), fieldCollector);
         }
 
         String countryCode = value.getCountryCode();
@@ -117,8 +125,8 @@ public class PhotonDocSerializer extends StdSerializer<PhotonDoc> {
         configExtraTags.writeFilteredExtraTags(gen, DocFields.EXTRA, value.getExtratags());
         writeExtent(gen, value.getBbox());
 
-        for (var contextVal : value.getContext().values()) {
-            termCollector.addAll(contextVal, 1);
+        for (var contextVal : value.getContext().entrySet()) {
+            termCollector.addAll(docProcessor.transform(contextVal.getKey(), contextVal.getValue()), 1);
         }
 
         if (!value.getCategories().isEmpty()) {
@@ -143,10 +151,10 @@ public class PhotonDocSerializer extends StdSerializer<PhotonDoc> {
 
         gen.writeObjectPropertyStart("field");
         if (isNamed) {
-            writeDistinctMapValuesAsList(gen, DocFields.NAME, value.getName());
+            writeNameCollectorAsList(gen, DocFields.NAME, nameCollector);
         }
-        for (var entry : value.getAddressParts().entrySet()) {
-            writeDistinctMapValuesAsList(gen, entry.getKey().getName(), entry.getValue());
+        for (var entry : fieldCollectors.entrySet()) {
+            writeNameCollectorAsList(gen, entry.getKey(), entry.getValue());
         }
         gen.writeEndObject(); // collector.field
 
@@ -177,15 +185,12 @@ public class PhotonDocSerializer extends StdSerializer<PhotonDoc> {
         gen.writeEndObject();
     }
 
-    private void writeDistinctMapValuesAsList(JsonGenerator gen, String fieldName, Map<String, String> names) {
+    private void writeNameCollectorAsList(JsonGenerator gen, String fieldName, NameCollector names) {
         gen.writeName(fieldName);
         gen.writeStartArray();
 
-        var seen = new HashSet<String>();
-        for (String name : names.values()) {
-            if (seen.add(name)) {
-                gen.writeString(name);
-            }
+        for (String name : names.nameSet()) {
+            gen.writeString(name);
         }
 
         gen.writeEndArray();
