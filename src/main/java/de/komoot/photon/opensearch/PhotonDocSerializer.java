@@ -15,6 +15,7 @@ import tools.jackson.core.JsonGenerator;
 import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.ser.std.StdSerializer;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -47,7 +48,7 @@ public class PhotonDocSerializer extends StdSerializer<PhotonDoc> {
         final var isAddress = value.getHouseNumber() != null;
         final var termCollector = new NameCollector();
         final var nameCollector  = new NameCollector();
-        final var fieldCollectors = new HashMap<String, NameCollector>();
+        final var fieldCollectors = new HashMap<String, HashSet<String>>();
 
         gen.writeStartObject();
         gen.writeNumberProperty(DocFields.OSM_ID, value.getOsmId());
@@ -107,11 +108,11 @@ public class PhotonDocSerializer extends StdSerializer<PhotonDoc> {
 
             gen.writeName(type.getName());
             context.writeValue(gen, values);
-            var fieldCollector = new NameCollector();
+            var fieldCollector = new HashSet<String>();
             for (var val : values.entrySet()) {
                 var names = docProcessor.transform(val.getKey(), val.getValue());
                 termCollector.addAll(names, prio);
-                fieldCollector.addAll(names, prio);
+                fieldCollector.addAll(names);
             }
             fieldCollectors.put(type.getName(), fieldCollector);
         }
@@ -151,10 +152,10 @@ public class PhotonDocSerializer extends StdSerializer<PhotonDoc> {
 
         gen.writeObjectPropertyStart("field");
         if (isNamed) {
-            writeNameCollectorAsList(gen, DocFields.NAME, nameCollector);
+            writeArrayProperty(gen, DocFields.NAME, nameCollector.nameSet());
         }
         for (var entry : fieldCollectors.entrySet()) {
-            writeNameCollectorAsList(gen, entry.getKey(), entry.getValue());
+            writeArrayProperty(gen, entry.getKey(), entry.getValue());
         }
         gen.writeEndObject(); // collector.field
 
@@ -185,11 +186,10 @@ public class PhotonDocSerializer extends StdSerializer<PhotonDoc> {
         gen.writeEndObject();
     }
 
-    private void writeNameCollectorAsList(JsonGenerator gen, String fieldName, NameCollector names) {
-        gen.writeName(fieldName);
-        gen.writeStartArray();
+    private void writeArrayProperty(JsonGenerator gen, String fieldName, Collection<String> names) {
+        gen.writeArrayPropertyStart(fieldName);
 
-        for (String name : names.nameSet()) {
+        for (String name : names) {
             gen.writeString(name);
         }
 
