@@ -8,18 +8,16 @@ import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.deser.std.StdDeserializer;
 
 import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 public class NestedConfigArrayDeserializer<T> extends StdDeserializer<List<T>> {
-    private final Path baseDir;
+    private final NestedConfigResolver resolver;
     private final Class<T> classType;
 
-    public NestedConfigArrayDeserializer(Path baseDir, Class<T> type) {
+    public NestedConfigArrayDeserializer(NestedConfigResolver resolver, Class<T> type) {
         super(List.class);
-        this.baseDir = baseDir.toAbsolutePath();
+        this.resolver = resolver;
         this.classType = type;
     }
 
@@ -29,20 +27,22 @@ public class NestedConfigArrayDeserializer<T> extends StdDeserializer<List<T>> {
 
         if (p.isExpectedStartArrayToken()) {
             while (p.nextToken() != JsonToken.END_ARRAY) {
-                if (p.currentToken() == JsonToken.VALUE_STRING
-                    && p.getValueAsString().startsWith("/FILE/ ")) {
+                if (p.currentToken() == JsonToken.VALUE_STRING) {
+
                     try {
-                        var reader = new FileReader(baseDir.resolve(p.getValueAsString().substring(7)).toFile());
-                        var parser = ctxt.createParser(reader);
-                        if (parser.nextToken() != null) {
-                            rules.addAll(deserialize(parser, ctxt));
+                        var stream = resolver.getStreamForFile(p.getValueAsString());
+                        if (stream != null) {
+                            var parser = ctxt.createParser(stream);
+                            if (parser.nextToken() != null) {
+                                rules.addAll(deserialize(parser, ctxt));
+                            }
+                            continue;
                         }
                     } catch (FileNotFoundException e) {
                         throw JacksonIOException.construct(e);
                     }
-                } else {
-                    rules.add(ctxt.readValue(p, classType));
                 }
+                rules.add(ctxt.readValue(p, classType));
             }
         }
 

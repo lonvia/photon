@@ -67,14 +67,21 @@ public class VariantsProcessor {
     private final Normalizer normalizer;
     private final List<Function<PhotonDoc, @Nullable String>> photonDocFilters;
     private final List<Function<String, @Nullable String>> nameFilters;
+    private final Map<String, String> countryLanguageMap = new HashMap<>();
     @Nullable private TreeNode transformers;
 
     public VariantsProcessor(
             Set<String> languages,
+            Map<String, String> countryLanguageMap,
             Normalizer normalizer,
             List<Function<PhotonDoc, @Nullable String>> photonDocFilters,
             List<Function<String, @Nullable String>> nameFilters) {
-        this.languages = languages;
+        this.languages = new HashSet<>(languages);
+        this.languages.addAll(countryLanguageMap.values());
+
+        for (var e: countryLanguageMap.entrySet()) {
+            this.countryLanguageMap.put(e.getKey().toUpperCase(), e.getValue());
+        }
         this.normalizer = normalizer;
         this.photonDocFilters = photonDocFilters;
         this.nameFilters = nameFilters;
@@ -99,18 +106,21 @@ public class VariantsProcessor {
                 return new Transform();
             }
         }
-        return new Transform(finalTree);
+        return new Transform(finalTree, countryLanguageMap.getOrDefault(doc.getCountryCode(), "default"));
     }
 
     public class Transform {
         @Nullable private final TreeNode tree;
+        private final String defaultLanguage;
 
         Transform() {
             this.tree = null;
+            this.defaultLanguage = "default";
         }
 
-        Transform(@Nullable TreeNode tree) {
+        Transform(@Nullable TreeNode tree, String defaultLanguage) {
             this.tree = tree;
+            this.defaultLanguage = defaultLanguage;
         }
 
         public String normalize(String input) {
@@ -135,7 +145,7 @@ public class VariantsProcessor {
 
             if (tree != null) {
                 var finalTree = tree;
-                var lang = languages.contains(nameType) ? nameType : "default";
+                var lang = languages.contains(nameType) ? nameType : defaultLanguage;
                 for (var filt : nameFilters) {
                     finalTree = finalTree.getChild(filt.apply(lang));
                     if (finalTree == null) {

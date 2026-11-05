@@ -72,7 +72,7 @@ public class ImportFilterConfig {
     public VariantConfig getVariantConfig() {
         if (variantConfig == null) {
             if (variantConfigFile == null) {
-                variantConfig = new VariantConfig();
+                variantConfig = VariantConfig.createDefault();
             } else {
                 variantConfig = VariantConfig.createFromFile(new File(variantConfigFile));
             }

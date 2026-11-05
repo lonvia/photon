@@ -1,5 +1,7 @@
 package de.komoot.photon.variants.config;
 
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.BeanDescription;
 import tools.jackson.databind.DeserializationConfig;
 import tools.jackson.databind.ValueDeserializer;
@@ -11,6 +13,7 @@ import tools.jackson.databind.type.CollectionType;
 import java.nio.file.Path;
 import java.util.List;
 
+@NullMarked
 public class NestedConfigModule extends SimpleModule {
 
     class NestedConfigDeserializer extends Deserializers.Base {
@@ -21,25 +24,30 @@ public class NestedConfigModule extends SimpleModule {
         }
 
         @Override
+        @Nullable
         public ValueDeserializer<?> findCollectionDeserializer(CollectionType type, DeserializationConfig config, BeanDescription.Supplier beanDescRef, TypeDeserializer elementTypeDeserializer, ValueDeserializer<?> elementDeserializer) {
             if (type.getRawClass() == List.class) {
-                return new NestedConfigArrayDeserializer<>(baseDir, type.containedType(0).getRawClass());
+                return new NestedConfigArrayDeserializer<>(resolver, type.containedType(0).getRawClass());
             }
 
             return null;
         }
     }
 
-    private final Path baseDir;
+    private final NestedConfigResolver resolver;
 
-    public NestedConfigModule(Path baseDir) {
+    public NestedConfigModule(@Nullable Path baseDir) {
         super("NestedConfigModule");
-        this.baseDir = baseDir;
+        this.resolver = new NestedConfigResolver(baseDir);
     }
 
     @Override
     public void setupModule(SetupContext context) {
         super.setupModule(context);
         context.addDeserializers(new NestedConfigDeserializer());
+    }
+
+    public NestedConfigResolver getResolver() {
+        return resolver;
     }
 }
