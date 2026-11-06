@@ -12,18 +12,16 @@ import java.util.function.Function;
 public class VariantsProcessor {
     private static class TreeNode {
 
-        @Nullable private static final String ANY = null;
-        @Nullable Map<@Nullable String, TreeNode> children;
+        @Nullable Map<String, TreeNode> children;
+        @Nullable TreeNode defaultChild = null;
         @Nullable List<WordTransformer> data;
 
         @Nullable TreeNode getChild(@Nullable String key) {
             if (children == null) {
-                return null;
+                return defaultChild;
             }
 
-            var next = children.get(key);
-
-            return next == null ? children.get(ANY) : next;
+            return children.getOrDefault(key, defaultChild);
         }
 
         void addData(List<@Nullable String> filterAttributes, int pos, WordTransformer transformer) {
@@ -33,17 +31,22 @@ public class VariantsProcessor {
                 }
                 data.add(transformer);
             } else {
-                if (children == null) {
-                    children = new HashMap<>();
-                }
                 var attr = filterAttributes.get(pos);
                 if (attr == null || attr.isEmpty()) {
-                    children.computeIfAbsent(ANY, t -> new TreeNode());
-                    for (var t : children.values()) {
-                        t.addData(filterAttributes, pos + 1, transformer);
+                    if (defaultChild == null) {
+                        defaultChild = new TreeNode();
+                    }
+                    defaultChild.addData(filterAttributes, pos + 1, transformer);
+                    if (children != null) {
+                        for (var t : children.values()) {
+                            t.addData(filterAttributes, pos + 1, transformer);
+                        }
                     }
                 } else {
-                    children.computeIfAbsent(attr, t -> children.containsKey(ANY) ? children.get(ANY).deepCopy() : new TreeNode())
+                    if (children == null) {
+                        children = new HashMap<>();
+                    }
+                    children.computeIfAbsent(attr, t -> defaultChild == null ? new TreeNode() : defaultChild.deepCopy())
                             .addData(filterAttributes, pos + 1, transformer);
                 }
             }
@@ -57,6 +60,9 @@ public class VariantsProcessor {
                 for (var e : children.entrySet()) {
                     newNode.children.put(e.getKey(), e.getValue().deepCopy());
                 }
+            }
+            if (defaultChild != null) {
+                newNode.defaultChild = defaultChild.deepCopy();
             }
 
             return newNode;
