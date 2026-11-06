@@ -1,4 +1,4 @@
-package de.komoot.photon.variants.lexcial;
+package de.komoot.photon.variants.transformer;
 
 import de.komoot.photon.normalization.NullNormalizer;
 import de.komoot.photon.variants.config.LexicalRulesConfig;

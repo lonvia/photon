@@ -36,6 +36,17 @@ public class BuiltInVariantsTest {
                 .containsExactlyInAnyOrder("oberweissig", "ob weissig");
         soft.assertThat(trans.transform("de", "Ober Hof"))
                 .containsExactlyInAnyOrder("ober hof", "ob  hof");
+
+        soft.assertThat(trans.transform("de", "Österlicher Südfährenweg"))
+                .containsExactlyInAnyOrder(
+                        "österlicher südfährenweg",
+                        "oesterlicher suedfaehrenweg",
+                        "österlicher südfähren weg",
+                        "oesterlicher suedfaehren weg",
+                        "österlicher südfährenw",
+                        "oesterlicher suedfaehrenw",
+                        "österlicher südfähren w",
+                        "oesterlicher suedfaehren w");
     }
 
     @Test

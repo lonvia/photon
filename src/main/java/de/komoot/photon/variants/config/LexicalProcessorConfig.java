@@ -2,7 +2,7 @@ package de.komoot.photon.variants.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.komoot.photon.normalization.Normalizer;
-import de.komoot.photon.variants.lexcial.LexicalTransformer;
+import de.komoot.photon.variants.transformer.LexicalTransformer;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.ArrayList;
