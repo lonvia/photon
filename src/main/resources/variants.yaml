@@ -1,6 +1,7 @@
 normalization:
   input:
-    - ":: NFKC_CF ()"
+    - ":: NFKC"
+    - ":: lower"
     - ":: Hans-Hant"
     - "ß > 'ss'"
     - "[’‘׳`\\'] > 'ʼ'"
