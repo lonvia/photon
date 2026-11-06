@@ -1,0 +1,48 @@
+normalization:
+  input:
+    - ":: NFKC ();"
+    - ":: lower ()"
+    - ":: Hans-Hant"
+    - "ß > 'ss'"
+    - "[’‘׳`\\'] > 'ʼ'"
+    - "[[:Punctuation:][:Symbol:] - [ʼ]]+  > ' '"
+language-defaults-per-country: /BUILTIN/
+variants:
+  - type: lexical
+    rules:
+        - /BUILTIN/ /variants/variants-bg.yaml
+        - /BUILTIN/ /variants/variants-ca.yaml
+        - /BUILTIN/ /variants/variants-cs.yaml
+        - /BUILTIN/ /variants/variants-da.yaml
+        - /BUILTIN/ /variants/variants-de.yaml
+        - /BUILTIN/ /variants/variants-el.yaml
+        - /BUILTIN/ /variants/variants-en.yaml
+        - /BUILTIN/ /variants/variants-es.yaml
+        - /BUILTIN/ /variants/variants-et.yaml
+        - /BUILTIN/ /variants/variants-eu.yaml
+        - /BUILTIN/ /variants/variants-fi.yaml
+        - /BUILTIN/ /variants/variants-fr.yaml
+        - /BUILTIN/ /variants/variants-gl.yaml
+        - /BUILTIN/ /variants/variants-hu.yaml
+        - /BUILTIN/ /variants/variants-it.yaml
+        - /BUILTIN/ /variants/variants-mg.yaml
+        - /BUILTIN/ /variants/variants-ms.yaml
+        - /BUILTIN/ /variants/variants-nl.yaml
+        - /BUILTIN/ /variants/variants-no.yaml
+        - /BUILTIN/ /variants/variants-pl.yaml
+        - /BUILTIN/ /variants/variants-pt.yaml
+        - /BUILTIN/ /variants/variants-ro.yaml
+        - /BUILTIN/ /variants/variants-ru.yaml
+        - /BUILTIN/ /variants/variants-sk.yaml
+        - /BUILTIN/ /variants/variants-sl.yaml
+        - /BUILTIN/ /variants/variants-sv.yaml
+        - /BUILTIN/ /variants/variants-tr.yaml
+        - /BUILTIN/ /variants/variants-uk.yaml
+        - /BUILTIN/ /variants/variants-vi.yaml
+  - type: icu-transform
+    rules:
+      - lang: de
+        transforms:
+          - ä > ae
+          - ö > oe
+          - ü > ue

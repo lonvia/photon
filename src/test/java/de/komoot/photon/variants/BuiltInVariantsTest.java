@@ -43,7 +43,7 @@ public class BuiltInVariantsTest {
         var trans = make("fr");
 
         soft.assertThat(trans.transform("fr", "L'eglise"))
-                .containsExactlyInAnyOrder("l`eglise");
+                .containsExactlyInAnyOrder("lʼeglise");
     }
 
     @Test
