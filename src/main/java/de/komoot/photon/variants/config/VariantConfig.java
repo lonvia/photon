@@ -5,18 +5,21 @@ import de.komoot.photon.PhotonDoc;
 import de.komoot.photon.normalization.ICUNormalizer;
 import de.komoot.photon.normalization.NullNormalizer;
 import de.komoot.photon.variants.VariantsProcessor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.dataformat.yaml.YAMLMapper;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Function;
 
 @NullMarked
 public class VariantConfig {
+    private static final Logger LOGGER = LogManager.getLogger();
+
     private static class Normalizations {
         @JsonProperty
         @Nullable List<String> input;
@@ -56,10 +59,6 @@ public class VariantConfig {
         return out.toString();
     }
 
-    public void setResolver(Path baseDir) {
-        resolver = new NestedConfigResolver(baseDir);
-    }
-
     public VariantsProcessor createProcessor(Set<String> languages, List<String> normalizerRules) {
         if (resolver != null && countryLanguageMapFile != null) {
             try {
@@ -77,18 +76,21 @@ public class VariantConfig {
 
         var normalizer = normalizerRules.isEmpty()? NullNormalizer.shared() : new ICUNormalizer("PhotonInputNormalizer", normalizerRules);
         var transformers = new ArrayList<ProcessorConfig.TransformerConfig>();
+        var filterLanguages = new HashSet<>(languages);
+        filterLanguages.addAll(countryLanguageMap.values());
+
 
         var filterCollector = new FilterCollector();
         for (var proc : processors) {
             for (var trans : proc.getTransformers(normalizer)) {
-                if (trans.filters().lang == null || languages.contains(trans.filters().lang)) {
+                if (trans.filters().lang == null || filterLanguages.contains(trans.filters().lang)) {
                     filterCollector.update(trans.filters());
                     transformers.add(trans);
                 }
             }
         }
 
-        var proc = new VariantsProcessor(languages, countryLanguageMap,
+        var proc = new VariantsProcessor(filterLanguages, countryLanguageMap,
                 normalizer,
                 filterCollector.createPhotonDocFilters(),
                 filterCollector.createNameFilters());

@@ -2,6 +2,8 @@ package de.komoot.photon.variants;
 
 import de.komoot.photon.PhotonDoc;
 import de.komoot.photon.normalization.Normalizer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -10,6 +12,7 @@ import java.util.function.Function;
 
 @NullMarked
 public class VariantsProcessor {
+    private static final Logger LOGGER = LogManager.getLogger();
     private static class TreeNode {
 
         @Nullable Map<String, TreeNode> children;
@@ -82,12 +85,12 @@ public class VariantsProcessor {
             Normalizer normalizer,
             List<Function<PhotonDoc, @Nullable String>> photonDocFilters,
             List<Function<String, @Nullable String>> nameFilters) {
-        this.languages = new HashSet<>(languages);
-        this.languages.addAll(countryLanguageMap.values());
+        this.languages = languages;
 
         for (var e: countryLanguageMap.entrySet()) {
             this.countryLanguageMap.put(e.getKey().toUpperCase(), e.getValue());
         }
+
         this.normalizer = normalizer;
         this.photonDocFilters = photonDocFilters;
         this.nameFilters = nameFilters;

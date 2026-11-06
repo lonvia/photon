@@ -24,7 +24,7 @@ BQ: nl
 BR: pt
 BS: en
 BT: dz
-BV: no
+BV: "no"
 BZ: en
 CC: en
 CD: fr
@@ -110,6 +110,7 @@ NE: fr
 NG: en
 NI: es
 NL: nl
+"NO": "no"
 NP: ne
 OM: ar
 PA: es
@@ -127,7 +128,7 @@ SB: en
 SE: sv
 SH: en
 SI: sl
-SJ: no
+SJ: "no"
 SK: sk
 SL: en
 SM: it
