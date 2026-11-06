@@ -12,7 +12,7 @@ import java.util.List;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
         @JsonSubTypes.Type(value = LexicalProcessorConfig.class, name = "lexical"),
-        @JsonSubTypes.Type(value = MutationProcessorConfig.class, name = "mutation")
+        @JsonSubTypes.Type(value = IcuTransformProcessorConfig.class, name = "icu-transform")
 })
 public interface ProcessorConfig {
     record TransformerConfig (WordTransformer transformer, FilterConfig filters) {}

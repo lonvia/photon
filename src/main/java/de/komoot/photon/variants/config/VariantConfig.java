@@ -5,8 +5,6 @@ import de.komoot.photon.PhotonDoc;
 import de.komoot.photon.normalization.ICUNormalizer;
 import de.komoot.photon.normalization.NullNormalizer;
 import de.komoot.photon.variants.VariantsProcessor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.dataformat.yaml.YAMLMapper;
@@ -19,8 +17,6 @@ import java.util.function.Function;
 
 @NullMarked
 public class VariantConfig {
-    private static final Logger LOGGER = LogManager.getLogger();
-
     private static class Normalizations {
         @JsonProperty
         @Nullable List<String> input;
@@ -73,7 +69,6 @@ public class VariantConfig {
                     countryLanguageMap = YAMLMapper.shared()
                             .readerForMapOf(String.class)
                             .readValue(stream);
-                    LOGGER.info("Loaded country map: {}", countryLanguageMap);
                 }
             } catch (FileNotFoundException e) {
                 throw new RuntimeException(e);
